@@ -26,4 +26,8 @@ public class AuthServiceImplementation implements AuthService {
 
         return userRepository.save(user).getDto();
     }
+
+    public Boolean existsByEmail(String email) {
+        return userRepository.findByEmail(email) != null;
+    }
 }

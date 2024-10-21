@@ -5,4 +5,6 @@ import com.westminster.ticketing_system.dtos.UserDTO;
 
 public interface AuthService {
     UserDTO signupCustomer(SignupDTO signupDTO);
+
+    Boolean existsByEmail(String email);
 }
