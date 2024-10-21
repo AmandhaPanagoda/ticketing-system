@@ -14,13 +14,23 @@ public class AuthenticationController {
     @Autowired
     private AuthService authService;
 
-    @PostMapping("/customer/signup")
+    @PostMapping("/signup")
     public ResponseEntity<?> signupCustomer(@RequestBody SignupDTO signupDTO) {
         if (authService.existsByEmail(signupDTO.getEmail())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
         }
 
         UserDTO createdUser = authService.signupCustomer(signupDTO);
+        return ResponseEntity.ok(createdUser);
+    }
+
+    @PostMapping("/vendor/signup")
+    public ResponseEntity<?> signupVendor(@RequestBody SignupDTO signupDTO) {
+        if (authService.existsByEmail(signupDTO.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+        }
+
+        UserDTO createdUser = authService.signupVendor(signupDTO);
         return ResponseEntity.ok(createdUser);
     }
 }

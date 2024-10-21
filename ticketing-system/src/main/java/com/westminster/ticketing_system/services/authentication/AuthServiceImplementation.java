@@ -27,6 +27,19 @@ public class AuthServiceImplementation implements AuthService {
         return userRepository.save(user).getDto();
     }
 
+    public UserDTO signupVendor(SignupDTO signupDTO) {
+        User user = new User();
+        user.setUsername(signupDTO.getUsername());
+        user.setFirstName(signupDTO.getFirstName());
+        user.setLastName(signupDTO.getLastName());
+        user.setEmail(signupDTO.getEmail());
+        user.setPhoneNumber(signupDTO.getPhoneNumber());
+        user.setPassword(signupDTO.getPassword());
+        user.setRole(UserRole.VENDOR);
+
+        return userRepository.save(user).getDto();
+    }
+
     public Boolean existsByEmail(String email) {
         return userRepository.findByEmail(email) != null;
     }
