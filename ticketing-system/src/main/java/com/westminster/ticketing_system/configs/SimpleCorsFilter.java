@@ -32,7 +32,7 @@ public class SimpleCorsFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        Map<String, String> headers = new HashMap<>();
+        // Map<String, String> headers = new HashMap<>();
 
         String origin = httpRequest.getHeader("origin");
         httpResponse.setHeader("Access-Control-Allow-Origin", origin != null ? origin : clientOrigin);
