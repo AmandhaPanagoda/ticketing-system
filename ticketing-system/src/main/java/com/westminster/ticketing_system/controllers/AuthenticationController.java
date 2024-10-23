@@ -9,7 +9,7 @@ import com.westminster.ticketing_system.dtos.*;
 import com.westminster.ticketing_system.services.authentication.AuthService;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthenticationController {
     @Autowired
     private AuthService authService;
