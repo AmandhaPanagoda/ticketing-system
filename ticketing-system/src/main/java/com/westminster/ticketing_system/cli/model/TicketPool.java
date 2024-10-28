@@ -21,7 +21,6 @@ public class TicketPool {
             for (int i = 0; i < count; i++) {
                 tickets.add(tickets.size() + 1);
             }
-            System.out.println(count + " tickets added. Total: " + tickets.size());
             return true;
         }
         return false;
@@ -30,7 +29,6 @@ public class TicketPool {
     public synchronized Integer removeTicket() {
         if (!tickets.isEmpty()) {
             Integer ticket = tickets.remove(0);
-            System.out.println("Ticket " + ticket + " sold. Remaining: " + tickets.size());
             return ticket;
         }
         return null;

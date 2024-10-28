@@ -44,7 +44,14 @@ public class TicketingSystemCLI {
     private void configureSystem() {
         System.out.println("System Configuration");
         int maxTicketCapacity = getIntInput("Enter max ticket capacity: ");
+
         int totalTickets = getIntInput("Enter total tickets: ");
+        while (totalTickets > maxTicketCapacity) {
+            System.out
+                    .println("Total tickets cannot exceed max capacity (" + maxTicketCapacity + "). Please try again.");
+            totalTickets = getIntInput("Enter total tickets: ");
+        }
+
         int ticketReleaseRate = getIntInput("Enter ticket release rate (ms): ");
         int customerRetrievalRate = getIntInput("Enter customer retrieval rate (ms): ");
 
@@ -164,6 +171,7 @@ public class TicketingSystemCLI {
 
             int vendorCount = getIntInput("Enter number of vendors: ");
             int customerCount = getIntInput("Enter number of customers: ");
+            System.out.println("Simulation started.");
 
             for (int i = 0; i < vendorCount; i++) {
                 addVendor();
@@ -171,7 +179,7 @@ public class TicketingSystemCLI {
             for (int i = 0; i < customerCount; i++) {
                 addCustomer();
             }
-            System.out.println("Simulation started.");
+
         } else {
             System.out.println("Simulation is already running.");
         }
