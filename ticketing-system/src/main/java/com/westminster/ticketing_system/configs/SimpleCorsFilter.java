@@ -9,6 +9,7 @@ import org.springframework.core.Ordered;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -43,6 +44,14 @@ public class SimpleCorsFilter implements Filter {
         } else {
             chain.doFilter(request, response);
         }
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) {
+    }
+
+    @Override
+    public void destroy() {
     }
 
 }

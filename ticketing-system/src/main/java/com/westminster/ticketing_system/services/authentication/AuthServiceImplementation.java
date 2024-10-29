@@ -1,6 +1,7 @@
 package com.westminster.ticketing_system.services.authentication;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.westminster.ticketing_system.dtos.SignupDTO;
@@ -21,7 +22,7 @@ public class AuthServiceImplementation implements AuthService {
         user.setLastName(signupDTO.getLastName());
         user.setEmail(signupDTO.getEmail());
         user.setPhoneNumber(signupDTO.getPhoneNumber());
-        user.setPassword(signupDTO.getPassword());
+        user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
         user.setRole(UserRole.CUSTOMER);
 
         return userRepository.save(user).getDto();
@@ -34,7 +35,7 @@ public class AuthServiceImplementation implements AuthService {
         user.setLastName(signupDTO.getLastName());
         user.setEmail(signupDTO.getEmail());
         user.setPhoneNumber(signupDTO.getPhoneNumber());
-        user.setPassword(signupDTO.getPassword());
+        user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
         user.setRole(UserRole.VENDOR);
 
         return userRepository.save(user).getDto();
