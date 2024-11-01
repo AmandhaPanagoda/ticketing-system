@@ -180,6 +180,14 @@ public class TicketingSystemCLI {
                 addCustomer();
             }
 
+            while (isRunning) {
+                try {
+                    Thread.sleep(1000); // sleep to prevent CPU overuse
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
         } else {
             System.out.println("Simulation is already running.");
         }

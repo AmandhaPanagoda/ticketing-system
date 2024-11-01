@@ -14,15 +14,23 @@ public class Customer implements Runnable {
         customerRetrievalRate = rate;
     }
 
+    protected String getName() {
+        return name;
+    }
+
+    protected TicketPool getTicketPool() {
+        return ticketPool;
+    }
+
+    protected static int getCustomerRetrievalRate() {
+        return customerRetrievalRate;
+    }
+
     @Override
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-                Integer ticket = ticketPool.removeTicket();
-                if (ticket != null) {
-                    System.out.println(name + " : " + "Purchased ticket #" + ticket + "\nRemaining tickets: "
-                            + ticketPool.getTicketCount());
-                }
+                ticketPool.removeTicket(name);
                 Thread.sleep(customerRetrievalRate);
             }
         } catch (InterruptedException e) {
