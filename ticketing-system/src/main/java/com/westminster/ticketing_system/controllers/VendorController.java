@@ -20,10 +20,10 @@ public class VendorController {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping("/ticket/{userId}")
-    public ResponseEntity<?> addTicket(@PathVariable int userId, @ModelAttribute TicketDTO ticketDTO)
+    @PostMapping("/ticket")
+    public ResponseEntity<?> addTicket( @ModelAttribute TicketDTO ticketDTO)
             throws IOException {
-        boolean isAdded = vendorService.addTicket(userId, ticketDTO);
+        boolean isAdded = vendorService.addTicket(14, ticketDTO);
         if (isAdded) {
             return ResponseEntity.ok("Ticket added successfully");
         }
