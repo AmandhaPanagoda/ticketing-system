@@ -23,6 +23,7 @@ import com.westminster.ticketing_system.util.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/v1/auth")
 public class AuthenticationController {
 
