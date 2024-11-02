@@ -9,6 +9,7 @@ import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.repository.TicketRepository;
 import com.westminster.ticketing_system.repository.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ public class CustomerServiceImplementation implements CustomerService {
         List<Ticket> tickets = ticketRepository.findAll();
         return tickets.stream()
                 .filter(ticket -> ticket.getPurchaser() == null)
+                .filter(ticket -> !ticket.isDeletedInd())
                 .map(Ticket::getDto)
                 .collect(Collectors.toList());
     }
@@ -34,6 +36,7 @@ public class CustomerServiceImplementation implements CustomerService {
     public List<TicketDTO> getCustomerTickets(int userId) {
         List<Ticket> tickets = ticketRepository.findByPurchaserId(userId);
         return tickets.stream()
+                .filter(ticket -> !ticket.isDeletedInd())
                 .map(Ticket::getDto)
                 .collect(Collectors.toList());
     }
@@ -50,6 +53,7 @@ public class CustomerServiceImplementation implements CustomerService {
             // Check if ticket is not already purchased and not deleted
             if (ticket.getPurchaser() == null && !ticket.isDeletedInd()) {
                 ticket.setPurchaser(customer);
+                ticket.setPurchasedDateTime(LocalDateTime.now());
                 ticketRepository.save(ticket);
                 return true;
             }

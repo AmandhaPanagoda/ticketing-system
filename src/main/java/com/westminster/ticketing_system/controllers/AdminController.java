@@ -29,7 +29,7 @@ public class AdminController {
 
     @GetMapping("/users/{role}")
     public ResponseEntity<List<UserDTO>> getUsersByRole(@PathVariable String role) {
-        return ResponseEntity.ok(adminService.getUsersByRole(role));
+        return ResponseEntity.ok(adminService.getUsersByRole(role.toUpperCase()));
     }
 
     @DeleteMapping("/user/{userId}")

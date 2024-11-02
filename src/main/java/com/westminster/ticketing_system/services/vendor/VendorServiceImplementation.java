@@ -1,6 +1,7 @@
 package com.westminster.ticketing_system.services.vendor;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,8 @@ public class VendorServiceImplementation implements VendorService {
             if (ticketDTO.getImage() != null && !ticketDTO.getImage().isEmpty()) {
                 ticket.setImage(ticketDTO.getImage().getBytes());
             }
+            ticket.setCreatedDateTime(LocalDateTime.now());
+            ticket.setUpdatedDateTime(LocalDateTime.now());
             ticket.setUser(optionalUser.get());
 
             ticketRepository.save(ticket);
@@ -47,6 +50,7 @@ public class VendorServiceImplementation implements VendorService {
         if (optionalUser.isPresent()) {
             List<Ticket> tickets = ticketRepository.findByUserId(userId);
             return tickets.stream()
+                    .filter(ticket -> !ticket.isDeletedInd())
                     .map(Ticket::getDto)
                     .collect(Collectors.toList());
         }
@@ -64,6 +68,7 @@ public class VendorServiceImplementation implements VendorService {
             if (ticketDTO.getImage() != null) {
                 ticket.setImage(ticketDTO.getImage().getBytes());
             }
+            ticket.setUpdatedDateTime(LocalDateTime.now());
             ticketRepository.save(ticket);
             return true;
         }
@@ -78,6 +83,7 @@ public class VendorServiceImplementation implements VendorService {
                 !optionalTicket.get().isDeletedInd()) {
             Ticket ticket = optionalTicket.get();
             ticket.setDeletedInd(true);
+            ticket.setUpdatedDateTime(LocalDateTime.now());
             ticketRepository.save(ticket);
             return true;
         }

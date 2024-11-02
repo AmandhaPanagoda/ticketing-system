@@ -1,6 +1,7 @@
 package com.westminster.ticketing_system.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -46,6 +47,15 @@ public class Ticket {
 
     @Column(name = "deleted_ind", nullable = false)
     private boolean deletedInd = false; // default to false
+
+    @Column(name = "purchased_date_time")
+    private LocalDateTime purchasedDateTime;
+
+    @Column(name = "updated_date_time")
+    private LocalDateTime updatedDateTime;
+
+    @Column(name = "created_date_time")
+    private LocalDateTime createdDateTime;
 
     public TicketDTO getDto() {
         TicketDTO ticketDTO = new TicketDTO();
