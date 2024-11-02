@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.dtos.UserDTO;
+import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
 import com.westminster.ticketing_system.services.admin.AdminService;
 
 @RestController
@@ -39,5 +40,22 @@ public class AdminController {
             return ResponseEntity.ok("User deleted successfully");
         }
         return ResponseEntity.badRequest().body("Failed to delete user");
+    }
+
+    @PutMapping("/system-configuration")
+    public ResponseEntity<?> updateSystemConfiguration(
+            @RequestHeader("userId") int userId,
+            @RequestBody SystemConfigurationDTO configurationDTO) {
+        boolean success = adminService.updateSystemConfiguration(userId, configurationDTO);
+        if (success) {
+            return ResponseEntity.ok("System configuration updated successfully");
+        }
+        return ResponseEntity.badRequest().body("Failed to update system configuration");
+    }
+
+    @GetMapping("/system-configuration")
+    public ResponseEntity<SystemConfigurationDTO> getSystemConfiguration() {
+        SystemConfigurationDTO config = adminService.getSystemConfiguration();
+        return ResponseEntity.ok(config);
     }
 }
