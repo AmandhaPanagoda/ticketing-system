@@ -40,6 +40,13 @@ public class Ticket {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchaser_id")
+    private User purchaser;
+
+    @Column(name = "deleted_ind", nullable = false)
+    private boolean deletedInd = false; // default to false
+
     public TicketDTO getDto() {
         TicketDTO ticketDTO = new TicketDTO();
 
@@ -50,6 +57,7 @@ public class Ticket {
         ticketDTO.setReturnedImage(image);
         ticketDTO.setUserId(user.getId());
         ticketDTO.setUsername(user.getUsername());
+        ticketDTO.setDeletedInd(deletedInd);
 
         return ticketDTO;
     }

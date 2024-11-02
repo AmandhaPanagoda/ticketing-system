@@ -16,4 +16,5 @@ public class TicketDTO {
     private byte[] returnedImage;
     private int userId;
     private String username;
+    private boolean deletedInd;
 }
