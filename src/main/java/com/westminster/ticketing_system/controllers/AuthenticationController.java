@@ -66,7 +66,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/authenticate")
-    public void createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest,
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest,
             HttpServletResponse response) throws IOException, JSONException {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
@@ -81,16 +81,17 @@ public class AuthenticationController {
 
         User user = userRepository.findByEmail(authenticationRequest.getUsername());
 
-        response.getWriter().write(new JSONObject()
+        JSONObject responseBody = new JSONObject()
                 .put("userId", user.getId())
                 .put("role", user.getRole())
-                .toString());
+                .put("token", TOKEN_PREFIX + jwt);
 
         response.addHeader("Access-Control-Expose-Headers", HEADER_STRING);
         response.addHeader("Access-Control-Allow-Headers",
                 HEADER_STRING + ", X-PINGOTHER, Origin, Content-Type, Accept, X-Requested-With, X-Custom-header");
-
         response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
+
+        return ResponseEntity.ok(responseBody.toString());
     }
 
 }
