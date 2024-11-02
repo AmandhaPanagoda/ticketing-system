@@ -1,5 +1,6 @@
 package com.westminster.ticketing_system.services.admin;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -14,6 +15,9 @@ import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.enums.UserRole;
 import com.westminster.ticketing_system.repository.TicketRepository;
 import com.westminster.ticketing_system.repository.UserRepository;
+import com.westminster.ticketing_system.repository.SystemConfigurationRepository;
+import com.westminster.ticketing_system.entity.SystemConfiguration;
+import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
 
 @Service
 public class AdminServiceImplementation implements AdminService {
@@ -23,6 +27,9 @@ public class AdminServiceImplementation implements AdminService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SystemConfigurationRepository systemConfigurationRepository;
 
     @Override
     public List<TicketDTO> getAllTickets() {
@@ -56,5 +63,51 @@ public class AdminServiceImplementation implements AdminService {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean updateSystemConfiguration(int userId, SystemConfigurationDTO configurationDTO) {
+        try {
+            Optional<User> optionalUser = userRepository.findById(userId);
+            if (!optionalUser.isPresent()) {
+                return false;
+            }
+
+            // Validate new configuration
+            if (configurationDTO.getTotalTickets() > configurationDTO.getMaxTicketCapacity()) {
+                return false;
+            }
+
+            SystemConfiguration newConfig = new SystemConfiguration();
+            newConfig.setTotalTickets(configurationDTO.getTotalTickets());
+            newConfig.setTicketReleaseRate(configurationDTO.getTicketReleaseRate());
+            newConfig.setCustomerRetrievalRate(configurationDTO.getCustomerRetrievalRate());
+            newConfig.setMaxTicketCapacity(configurationDTO.getMaxTicketCapacity());
+            newConfig.setCreatedDateTime(LocalDateTime.now());
+            newConfig.setUpdatedDateTime(LocalDateTime.now());
+            newConfig.setUpdatedBy(optionalUser.get());
+
+            systemConfigurationRepository.save(newConfig);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public SystemConfigurationDTO getSystemConfiguration() {
+        Optional<SystemConfiguration> config = systemConfigurationRepository.findFirstByOrderByCreatedDateTimeDesc();
+
+        if (config.isPresent()) {
+            SystemConfiguration currentConfig = config.get();
+            return new SystemConfigurationDTO(
+                    currentConfig.getTotalTickets(),
+                    currentConfig.getTicketReleaseRate(),
+                    currentConfig.getCustomerRetrievalRate(),
+                    currentConfig.getMaxTicketCapacity());
+        }
+
+        // Return default values if no configuration exists
+        return new SystemConfigurationDTO(100, 10, 5, 1000);
     }
 }
