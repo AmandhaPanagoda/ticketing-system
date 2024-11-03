@@ -12,4 +12,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Integer> {
     List<Ticket> findByUserId(int userId);
 
     List<Ticket> findByPurchaserId(int purchaserId);
+
+    List<Ticket> findByPurchasedFalseAndDeletedIndFalse();
 }
