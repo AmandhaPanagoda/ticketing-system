@@ -21,6 +21,16 @@ public class ThreadManager {
         this.ticketPool = ticketPool;
     }
 
+    public void addVendorThread(VendorThread vendorThread) {
+        vendorThreads.add(vendorThread);
+        log.info("Added new vendor thread: {}", vendorThread.getName());
+    }
+
+    public void addCustomerThread(CustomerThread customerThread) {
+        customerThreads.add(customerThread);
+        log.info("Added new customer thread: {}", customerThread.getName());
+    }
+
     public void startSystem(int vendorCount, int customerCount) {
         // Start vendor threads
         for (int i = 1; i <= vendorCount; i++) {

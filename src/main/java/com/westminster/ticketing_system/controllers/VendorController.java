@@ -10,14 +10,17 @@ import org.springframework.web.bind.annotation.*;
 import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.services.vendor.VendorService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1/vendor")
+@Slf4j
 public class VendorController {
 
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping("/v1/vendor/ticket/{userId}")
+    @PostMapping("/ticket/{userId}")
     public ResponseEntity<?> addTicket(@PathVariable int userId, @RequestBody TicketDTO ticketDTO)
             throws IOException {
         boolean isAdded = vendorService.addTicket(userId, ticketDTO);
@@ -27,13 +30,13 @@ public class VendorController {
         return ResponseEntity.badRequest().body("Failed to add ticket");
     }
 
-    @GetMapping("/v1/vendor/tickets/{userId}")
+    @GetMapping("/tickets/{userId}")
     public ResponseEntity<?> getVendorTickets(@PathVariable int userId) {
         List<TicketDTO> tickets = vendorService.getVendorTickets(userId);
         return ResponseEntity.ok(tickets);
     }
 
-    @PutMapping("/v1/vendor/ticket/{ticketId}")
+    @PutMapping("/ticket/{ticketId}")
     public ResponseEntity<?> updateTicket(@PathVariable int ticketId, @RequestBody TicketDTO ticketDTO)
             throws IOException {
         boolean isUpdated = vendorService.updateTicket(ticketId, ticketDTO);
@@ -43,7 +46,7 @@ public class VendorController {
         return ResponseEntity.badRequest().body("Failed to update ticket");
     }
 
-    @DeleteMapping("/v1/vendor/ticket/{ticketId}/{userId}")
+    @DeleteMapping("/ticket/{ticketId}/{userId}")
     public ResponseEntity<?> deleteTicket(@PathVariable int ticketId, @PathVariable int userId) {
         boolean isDeleted = vendorService.deleteTicket(ticketId, userId);
         if (isDeleted) {

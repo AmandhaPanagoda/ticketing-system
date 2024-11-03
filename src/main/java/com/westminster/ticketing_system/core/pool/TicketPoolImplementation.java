@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +20,10 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class TicketPoolImplementation implements TicketPool {
+    private final AdminService adminService;
+    private final TicketRepository ticketRepository;
+    private final UserRepository userRepository;
+    private final int maxPoolSize;
     private final ConcurrentLinkedQueue<Ticket> ticketQueue;
     private final Semaphore availableTickets;
     private final Semaphore capacityControl;
@@ -26,28 +31,56 @@ public class TicketPoolImplementation implements TicketPool {
     private volatile boolean isRunning = true;
 
     @Autowired
-    private AdminService adminService;
+    public TicketPoolImplementation(AdminService adminService, TicketRepository ticketRepository,
+            UserRepository userRepository) {
+        this.adminService = adminService;
+        this.ticketRepository = ticketRepository;
+        this.userRepository = userRepository;
 
-    @Autowired
-    private TicketRepository ticketRepository;
+        // Determine maxPoolSize before using it
+        int poolSize = 10; // Default value
+        try {
+            SystemConfigurationDTO config = adminService.getSystemConfiguration();
+            if (config != null) {
+                poolSize = config.getMaxTicketCapacity();
+                log.info("Loaded maxPoolSize from config: {}", poolSize);
+            }
+        } catch (Exception e) {
+            log.warn("Could not load system configuration. Using default maxPoolSize: {}", poolSize);
+        }
 
-    @Autowired
-    private UserRepository userRepository;
-
-    public TicketPoolImplementation() {
-        SystemConfigurationDTO config = adminService.getSystemConfiguration();
+        this.maxPoolSize = poolSize;
         this.ticketQueue = new ConcurrentLinkedQueue<>();
         this.availableTickets = new Semaphore(0, true);
-        this.capacityControl = new Semaphore(config.getMaxTicketCapacity(), true);
+        this.capacityControl = new Semaphore(maxPoolSize, true);
     }
 
     @Override
-    public boolean addTickets(List<Ticket> tickets, int vendorId) throws InterruptedException {
+    public boolean addTickets(int ticketCount, int vendorId) throws InterruptedException {
         if (!isRunning)
             return false;
 
+        // Calculate available capacity
+        int currentCount = getCurrentTicketCount();
+        int availableCapacity = maxPoolSize - currentCount;
+
+        if (availableCapacity <= 0) {
+            log.warn("Vendor {} cannot add tickets - pool is full (capacity: {})",
+                    vendorId, maxPoolSize);
+            return false;
+        }
+
+        // Adjust ticketCount to available capacity
+        int adjustedTicketCount = Math.min(ticketCount, availableCapacity);
+        if (adjustedTicketCount < ticketCount) {
+            log.info("Vendor {} requested {} tickets, but only {} slots available. Adding partial batch.",
+                    vendorId, ticketCount, adjustedTicketCount);
+        }
+
         SystemConfigurationDTO config = adminService.getSystemConfiguration();
         long releaseRate = config.getTicketReleaseRate();
+        List<Ticket> tickets = generateTicketBatch(adjustedTicketCount, vendorId); // generate tickets for the adjusted
+                                                                                   // ticket count
 
         for (Ticket ticket : tickets) {
             // Wait for release rate
@@ -99,8 +132,8 @@ public class TicketPoolImplementation implements TicketPool {
                 synchronized (lock) {
                     Ticket ticket = ticketQueue.poll();
                     if (ticket != null) {
-                        ticket.setPurchaser(userRepository.findById(customerId).get());
-                        ticket.setPurchasedDateTime(LocalDateTime.now());
+                        // ticket.setPurchaser(userRepository.findById(customerId).get());
+                        // ticket.setPurchasedDateTime(LocalDateTime.now());
                         purchasedTickets.add(ticket);
                         capacityControl.release();
                     }
@@ -136,5 +169,27 @@ public class TicketPoolImplementation implements TicketPool {
     @Override
     public boolean isPoolEmpty() {
         return ticketQueue.isEmpty();
+    }
+
+    private List<Ticket> generateTicketBatch(int ticketCount, int vendorId) { // needs to be implemented in a better way
+        List<Ticket> tickets = new ArrayList<>();
+
+        for (int i = 0; i < ticketCount; i++) {
+            Ticket ticket = new Ticket();
+
+            ticket.setTitle("Test Ticket " + i);
+            ticket.setDescription("Test Description for ticket " + i);
+            ticket.setUpdatedDateTime(LocalDateTime.now());
+            ticket.setUser(userRepository.findById(vendorId).get());
+            ticket.setPrice(BigDecimal.valueOf(100.00));
+            ticket.setCreatedDateTime(LocalDateTime.now());
+
+            tickets.add(ticket);
+
+            log.debug("Generated ticket: Title={}, Price=${}, VendorId={}",
+                    ticket.getTitle(), ticket.getPrice());
+        }
+
+        return tickets;
     }
 }

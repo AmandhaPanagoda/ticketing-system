@@ -5,7 +5,7 @@ import java.util.List;
 import com.westminster.ticketing_system.entity.Ticket;
 
 public interface TicketPool {
-    boolean addTickets(List<Ticket> tickets, int vendorId) throws InterruptedException;
+    boolean addTickets(int ticketCount, int vendorId) throws InterruptedException;
 
     boolean purchaseTickets(int count, int customerId) throws InterruptedException;
 
