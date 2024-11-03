@@ -31,6 +31,9 @@ public class ThreadManager {
         log.info("Added new customer thread: {}", customerThread.getName());
     }
 
+    // for simulation, pass in vendorCount and customerCount
+    // this method is not intended to be used, this will set false values in the
+    // purchaser and user id fields
     public void startSystem(int vendorCount, int customerCount) {
         // Start vendor threads
         for (int i = 1; i <= vendorCount; i++) {
@@ -41,7 +44,7 @@ public class ThreadManager {
 
         // Start customer threads
         for (int i = 1; i <= customerCount; i++) {
-            CustomerThread customerThread = new CustomerThread(ticketPool, i);
+            CustomerThread customerThread = new CustomerThread(ticketPool, i, 6);
             customerThreads.add(customerThread);
             customerThread.start();
         }
