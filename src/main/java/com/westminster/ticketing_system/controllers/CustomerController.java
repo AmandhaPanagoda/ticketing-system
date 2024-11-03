@@ -10,23 +10,23 @@ import com.westminster.ticketing_system.services.Customer.CustomerService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1/customer")
 public class CustomerController {
 
     @Autowired
     private CustomerService customerService;
 
-    @GetMapping("/v1/customer/tickets")
+    @GetMapping("/tickets")
     public ResponseEntity<List<TicketDTO>> getAllTickets() {
         return ResponseEntity.ok(customerService.getAllAvailableTickets());
     }
 
-    @GetMapping("/v1/customer/tickets/{userId}")
+    @GetMapping("/tickets/{userId}")
     public ResponseEntity<List<TicketDTO>> getCustomerTickets(@PathVariable int userId) {
         return ResponseEntity.ok(customerService.getCustomerTickets(userId));
     }
 
-    @PostMapping("/v1/customer/ticket/purchase/{ticketId}/{userId}")
+    @PostMapping("/ticket/purchase/{ticketId}/{userId}")
     public ResponseEntity<?> purchaseTicket(@PathVariable int ticketId, @PathVariable int userId) {
         boolean isPurchased = customerService.purchaseTicket(ticketId, userId);
         if (isPurchased) {

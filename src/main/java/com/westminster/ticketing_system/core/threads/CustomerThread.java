@@ -7,11 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomerThread extends Thread {
     private final TicketPool ticketPool;
     private final int customerId;
+    private final int ticketCount;
     private volatile boolean running = true;
 
-    public CustomerThread(TicketPool ticketPool, int customerId) {
+    public CustomerThread(TicketPool ticketPool, int customerId, int ticketCount) {
         this.ticketPool = ticketPool;
         this.customerId = customerId;
+        this.ticketCount = ticketCount;
         setName("Customer-" + customerId);
     }
 
@@ -19,20 +21,21 @@ public class CustomerThread extends Thread {
     public void run() {
         while (running) {
             try {
-                int ticketsWanted = 3; // testing - buy 3 tickets at a time
-                boolean success = ticketPool.purchaseTickets(ticketsWanted, customerId);
+                boolean success = ticketPool.purchaseTickets(ticketCount, customerId);
                 if (!success) {
                     log.warn("Customer {} failed to purchase tickets", customerId);
                 }
-                Thread.sleep(2000); // Simulate customer thinking time
+                break;
             } catch (InterruptedException e) {
                 log.info("Customer {} thread interrupted", customerId);
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
                 log.error("Error in customer thread {}: {}", customerId, e.getMessage());
+                break;
             }
         }
+        running = false;
     }
 
     public void shutdown() {
