@@ -7,13 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 public class VendorThread extends Thread {
     private final TicketPool ticketPool;
     private final int vendorId;
-    private final int batchSize;
+    private final int ticketCount;
     private volatile boolean running = true;
 
-    public VendorThread(TicketPool ticketPool, int vendorId, int batchSize) {
+    public VendorThread(TicketPool ticketPool, int vendorId, int ticketCount) {
         this.ticketPool = ticketPool;
         this.vendorId = vendorId;
-        this.batchSize = batchSize;
+        this.ticketCount = ticketCount;
         setName("Vendor-" + vendorId);
     }
 
@@ -21,10 +21,14 @@ public class VendorThread extends Thread {
     public void run() {
         while (running) {
             try {
-                boolean success = ticketPool.addTickets(batchSize, vendorId);
+                boolean success = ticketPool.addTickets(ticketCount, vendorId);
                 if (!success) {
                     log.warn("Vendor {} failed to add tickets", vendorId);
                 }
+                break;
+            } catch (InterruptedException e) {
+                log.info("Vendor {} thread interrupted", vendorId);
+                Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
                 log.error("Error in vendor thread {}: {}", vendorId, e.getMessage());

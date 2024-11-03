@@ -97,7 +97,9 @@ public class TicketPoolImplementation implements TicketPool {
                     // Save to database
                     Ticket savedTicket = ticketRepository.save(ticket);
                     ticketQueue.offer(savedTicket);
-                    availableTickets.release();
+                    availableTickets.release(); // +1 permits are added when vendors add tickets : this means the number
+                                                // of
+                                                // resources that can be acquired by customers
                     log.info("Vendor {} added ticket {}. Current pool size: {}",
                             vendorId, savedTicket.getId(), ticketQueue.size());
                 }
@@ -132,10 +134,13 @@ public class TicketPoolImplementation implements TicketPool {
                 synchronized (lock) {
                     Ticket ticket = ticketQueue.poll();
                     if (ticket != null) {
-                        // ticket.setPurchaser(userRepository.findById(customerId).get());
-                        // ticket.setPurchasedDateTime(LocalDateTime.now());
+                        ticket.setPurchaser(userRepository.findById(customerId).get());
+                        ticket.setPurchasedDateTime(LocalDateTime.now());
                         purchasedTickets.add(ticket);
-                        capacityControl.release();
+                        capacityControl.release(); // -1 permits are added when customers purchase tickets : this
+                                                   // means the number of resources that can be added by vendors
+                        log.info("Customer {} purchased ticket {}. Current pool size: {}",
+                                customerId, ticket.getId(), ticketQueue.size());
                     }
                 }
             } catch (Exception e) {
@@ -145,7 +150,7 @@ public class TicketPoolImplementation implements TicketPool {
         }
 
         // save purchased tickets
-        // ticketRepository.saveAll(purchasedTickets);
+        ticketRepository.saveAll(purchasedTickets);
         log.info("Customer {} purchased {} tickets", customerId, count);
         return true;
     }

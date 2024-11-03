@@ -1,15 +1,11 @@
 package com.westminster.ticketing_system.controllers;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.westminster.ticketing_system.dtos.TicketDTO;
-import com.westminster.ticketing_system.services.vendor.VendorService;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.core.threads.VendorThread;
 import com.westminster.ticketing_system.core.pool.TicketPool;
