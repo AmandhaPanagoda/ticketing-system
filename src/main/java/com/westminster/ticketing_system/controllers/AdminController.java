@@ -5,11 +5,14 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.dtos.UserDTO;
 import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
+import com.westminster.ticketing_system.dtos.TransactionLogDTO;
 import com.westminster.ticketing_system.services.admin.AdminService;
+import com.westminster.ticketing_system.services.transaction.TransactionLogService;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -17,6 +20,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private TransactionLogService transactionLogService;
 
     @GetMapping("/tickets")
     public ResponseEntity<List<TicketDTO>> getAllTickets() {
@@ -57,5 +63,11 @@ public class AdminController {
     public ResponseEntity<SystemConfigurationDTO> getSystemConfiguration() {
         SystemConfigurationDTO config = adminService.getSystemConfiguration();
         return ResponseEntity.ok(config);
+    }
+
+    @GetMapping("/transaction-logs")
+    public DeferredResult<List<TransactionLogDTO>> getTransactionLogs(
+            @RequestHeader("Client-Id") String clientId) {
+        return transactionLogService.waitForNewTransactions(clientId);
     }
 }

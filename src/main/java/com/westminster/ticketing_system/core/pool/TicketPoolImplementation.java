@@ -5,6 +5,8 @@ import com.westminster.ticketing_system.repository.TicketRepository;
 import com.westminster.ticketing_system.repository.UserRepository;
 import com.westminster.ticketing_system.services.admin.AdminService;
 import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
+import com.westminster.ticketing_system.dtos.TransactionLogDTO;
+import com.westminster.ticketing_system.services.transaction.TransactionLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,13 +31,15 @@ public class TicketPoolImplementation implements TicketPool {
     private final Semaphore capacityControl;
     private final Object lock = new Object();
     private volatile boolean isRunning = true;
+    private final TransactionLogService transactionLogService;
 
     @Autowired
     public TicketPoolImplementation(AdminService adminService, TicketRepository ticketRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository, TransactionLogService transactionLogService) {
         this.adminService = adminService;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
+        this.transactionLogService = transactionLogService;
 
         // Determine maxPoolSize before using it
         int poolSize = 10; // Default value
@@ -102,6 +106,18 @@ public class TicketPoolImplementation implements TicketPool {
                                                 // resources that can be acquired by customers
                     log.info("Vendor {} added ticket {}. Current pool size: {}",
                             vendorId, savedTicket.getId(), ticketQueue.size());
+
+                    // Log the transaction
+                    TransactionLogDTO log = new TransactionLogDTO();
+                    log.setType("SALE");
+                    log.setTimestamp(LocalDateTime.now());
+                    log.setUserId(vendorId);
+                    log.setUserRole("VENDOR");
+                    log.setTicketId(savedTicket.getId());
+                    log.setAmount(savedTicket.getPrice());
+                    log.setStatus("SUCCESS");
+
+                    transactionLogService.addTransaction(log);
                 }
             } catch (Exception e) {
                 capacityControl.release();
@@ -141,6 +157,18 @@ public class TicketPoolImplementation implements TicketPool {
                                                    // means the number of resources that can be added by vendors
                         log.info("Customer {} purchased ticket {}. Current pool size: {}",
                                 customerId, ticket.getId(), ticketQueue.size());
+
+                        // Log the transaction
+                        TransactionLogDTO log = new TransactionLogDTO();
+                        log.setType("PURCHASE");
+                        log.setTimestamp(LocalDateTime.now());
+                        log.setUserId(customerId);
+                        log.setUserRole("CUSTOMER");
+                        log.setTicketId(ticket.getId());
+                        log.setAmount(ticket.getPrice());
+                        log.setStatus("SUCCESS");
+
+                        transactionLogService.addTransaction(log);
                     }
                 }
             } catch (Exception e) {
