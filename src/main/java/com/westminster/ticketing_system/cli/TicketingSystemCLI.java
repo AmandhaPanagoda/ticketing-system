@@ -4,6 +4,7 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.Future;
@@ -23,6 +24,7 @@ public class TicketingSystemCLI {
     private final List<Future<?>> customerTasks;
     private int vendorCounter;
     private int customerCounter;
+    private final OutputConsole outputConsole;
 
     public TicketingSystemCLI() {
         this.ticketPool = new TicketPool();
@@ -34,6 +36,8 @@ public class TicketingSystemCLI {
         this.customerTasks = new ArrayList<>();
         this.vendorCounter = 0;
         this.customerCounter = 0;
+        this.outputConsole = OutputConsole.getInstance();
+        this.outputConsole.setVisible(true);
     }
 
     public void start() {
@@ -179,15 +183,6 @@ public class TicketingSystemCLI {
             for (int i = 0; i < customerCount; i++) {
                 addCustomer();
             }
-
-            while (isRunning) {
-                try {
-                    Thread.sleep(1000); // sleep to prevent CPU overuse
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
         } else {
             System.out.println("Simulation is already running.");
         }
@@ -217,10 +212,12 @@ public class TicketingSystemCLI {
     }
 
     private void printStatus() {
+        System.out.println("\n=== System Status ===");
         System.out.println("Current ticket count: " + ticketPool.getTicketCount());
         System.out.println("Active vendors: " + vendorTasks.size());
         System.out.println("Active customers: " + customerTasks.size());
         System.out.println("System is " + (isRunning ? "running" : "stopped"));
+        System.out.println("===================\n");
     }
 
     private void exitSimulation() {
@@ -229,6 +226,8 @@ public class TicketingSystemCLI {
         }
         System.out.println("Exiting simulation.");
         scanner.close();
+        outputConsole.dispose();
+        System.exit(0);
     }
 
     private int getIntInput(String prompt) {
@@ -247,6 +246,11 @@ public class TicketingSystemCLI {
     }
 
     public static void main(String[] args) {
-        new TicketingSystemCLI().start();
+        // Initialize the GUI windows
+        OutputConsole outputConsole = OutputConsole.getInstance();
+        outputConsole.setVisible(true);
+
+        TicketingSystemCLI cli = new TicketingSystemCLI();
+        cli.start();
     }
 }

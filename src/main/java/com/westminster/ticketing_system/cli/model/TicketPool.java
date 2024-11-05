@@ -1,5 +1,6 @@
 package com.westminster.ticketing_system.cli.model;
 
+import com.westminster.ticketing_system.cli.OutputConsole;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,6 +10,7 @@ public class TicketPool {
     private int maxTicketCapacity;
     private final Object lockObject = new Object();
     private int TicketId = 1;
+    private final OutputConsole console = OutputConsole.getInstance();
 
     public TicketPool() {
         this.tickets = Collections.synchronizedList(new LinkedList<>());
@@ -22,7 +24,7 @@ public class TicketPool {
         if (tickets.size() + count <= maxTicketCapacity) {
             for (int i = 0; i < count; i++) {
                 tickets.add(TicketId++);
-                System.out.println("Ticket #" + (TicketId - 1) + " added. Current total: " + tickets.size());
+                console.println("Ticket #" + (TicketId - 1) + " added. Current total: " + tickets.size());
             }
             return true;
         }
@@ -33,7 +35,7 @@ public class TicketPool {
         synchronized (lockObject) {
             if (!tickets.isEmpty()) {
                 Integer ticket = tickets.remove(0);
-                System.out.println(customerName + "(VIP) : Purchased ticket #" + ticket +
+                console.println(customerName + "(VIP) : Purchased ticket #" + ticket +
                         "\nRemaining tickets: " + tickets.size());
                 return ticket;
             }
@@ -51,7 +53,7 @@ public class TicketPool {
                 }
                 if (!tickets.isEmpty()) {
                     Integer ticket = tickets.remove(0);
-                    System.out.println(customerName + " : Purchased ticket #" + ticket +
+                    console.println(customerName + " : Purchased ticket #" + ticket +
                             "\nRemaining tickets: " + tickets.size());
                     return ticket;
                 }
