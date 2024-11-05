@@ -13,6 +13,7 @@ import com.westminster.ticketing_system.cli.model.Customer;
 import com.westminster.ticketing_system.cli.model.TicketPool;
 import com.westminster.ticketing_system.cli.model.Vendor;
 import com.westminster.ticketing_system.cli.model.Configuration;
+import com.westminster.ticketing_system.cli.model.VIPCustomer;
 
 public class TicketingSystemCLI {
     private final TicketPool ticketPool;
@@ -24,6 +25,8 @@ public class TicketingSystemCLI {
     private final List<Future<?>> customerTasks;
     private int vendorCounter;
     private int customerCounter;
+    private final List<Future<?>> vipCustomerTasks;
+    private int vipCustomerCounter;
     private final OutputConsole outputConsole;
 
     public TicketingSystemCLI() {
@@ -34,8 +37,10 @@ public class TicketingSystemCLI {
         this.isRunning = false;
         this.vendorTasks = new ArrayList<>();
         this.customerTasks = new ArrayList<>();
+        this.vipCustomerTasks = new ArrayList<>();
         this.vendorCounter = 0;
         this.customerCounter = 0;
+        this.vipCustomerCounter = 0;
         this.outputConsole = OutputConsole.getInstance();
         this.outputConsole.setVisible(true);
     }
@@ -94,7 +99,7 @@ public class TicketingSystemCLI {
     }
 
     private void handleAddCommand() {
-        System.out.println("Enter type to add (vendor/customer): ");
+        System.out.println("Enter type to add (vendor/customer/vip): ");
         String type = scanner.nextLine().trim().toLowerCase();
 
         switch (type) {
@@ -104,8 +109,11 @@ public class TicketingSystemCLI {
             case "customer":
                 addCustomer();
                 break;
+            case "vip":
+                addVIPCustomer();
+                break;
             default:
-                System.out.println("Invalid type. Please enter 'vendor' or 'customer'.");
+                System.out.println("Invalid type. Please enter 'vendor', 'customer', or 'vip'.");
         }
     }
 
@@ -145,6 +153,16 @@ public class TicketingSystemCLI {
         }
     }
 
+    private void addVIPCustomer() {
+        if (isRunning) {
+            Future<?> task = executorService.submit(new VIPCustomer("VIP-" + vipCustomerCounter++, ticketPool));
+            vipCustomerTasks.add(task);
+            System.out.println("New VIP customer added. Total VIP customers: " + vipCustomerTasks.size());
+        } else {
+            System.out.println("Please start the simulation first.");
+        }
+    }
+
     private void removeVendor() {
         if (!vendorTasks.isEmpty()) {
             Future<?> task = vendorTasks.remove(vendorTasks.size() - 1);
@@ -170,11 +188,14 @@ public class TicketingSystemCLI {
             isRunning = true;
             vendorTasks.clear();
             customerTasks.clear();
+            vipCustomerTasks.clear();
             vendorCounter = 0;
             customerCounter = 0;
+            vipCustomerCounter = 0;
 
             int vendorCount = getIntInput("Enter number of vendors: ");
             int customerCount = getIntInput("Enter number of customers: ");
+            int vipCustomerCount = getIntInput("Enter number of VIP customers: ");
             System.out.println("Simulation started.");
 
             for (int i = 0; i < vendorCount; i++) {
@@ -182,6 +203,9 @@ public class TicketingSystemCLI {
             }
             for (int i = 0; i < customerCount; i++) {
                 addCustomer();
+            }
+            for (int i = 0; i < vipCustomerCount; i++) {
+                addVIPCustomer();
             }
         } else {
             System.out.println("Simulation is already running.");
@@ -197,8 +221,12 @@ public class TicketingSystemCLI {
             for (Future<?> task : customerTasks) {
                 task.cancel(true);
             }
+            for (Future<?> task : vipCustomerTasks) {
+                task.cancel(true);
+            }
             vendorTasks.clear();
             customerTasks.clear();
+            vipCustomerTasks.clear();
             executorService.shutdownNow();
             try {
                 executorService.awaitTermination(5, TimeUnit.SECONDS);
@@ -216,6 +244,7 @@ public class TicketingSystemCLI {
         System.out.println("Current ticket count: " + ticketPool.getTicketCount());
         System.out.println("Active vendors: " + vendorTasks.size());
         System.out.println("Active customers: " + customerTasks.size());
+        System.out.println("Active VIP customers: " + vipCustomerTasks.size());
         System.out.println("System is " + (isRunning ? "running" : "stopped"));
         System.out.println("===================\n");
     }
