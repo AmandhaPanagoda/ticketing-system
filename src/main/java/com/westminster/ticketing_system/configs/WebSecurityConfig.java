@@ -28,13 +28,13 @@ public class WebSecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/authenticate", "/api/v1/auth/vendor/signup",
-                                "/api/v1/vendor/**", "/api/v1/customer/**", "/api/v1/admin/**",
-                                "/api/v2/vendor/**", "/api/v2/customer/**",
-
-                                "/api/v1/auth/signup", "/api/v1/tickets", "/search/{title}")
+                        .requestMatchers("/api/v1/auth/**"
+                        // ,"/api/v1/vendor/**", "/api/v1/customer/**", "/api/v1/admin/**",
+                        // "/api/v2/vendor/**", "/api/v2/customer/**",
+                        // "/api/v1/tickets"
+                        )
                         .permitAll()
-                        .requestMatchers("/api/v1/**")
+                        .anyRequest()
                         .authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
