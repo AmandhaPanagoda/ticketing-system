@@ -28,9 +28,9 @@ public class WebSecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**"
+                        .requestMatchers("/api/v1/auth/**", "/ws/**"
                         // ,"/api/v1/vendor/**", "/api/v1/customer/**", "/api/v1/admin/**",
-                        // "/api/v2/vendor/**", "/api/v2/customer/**",
+                                , "/api/v2/vendor/**", "/api/v2/customer/**"
                         // "/api/v1/tickets"
                         )
                         .permitAll()

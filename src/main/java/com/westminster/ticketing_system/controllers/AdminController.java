@@ -1,5 +1,6 @@
 package com.westminster.ticketing_system.controllers;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,9 +66,10 @@ public class AdminController {
         return ResponseEntity.ok(config);
     }
 
-    @GetMapping("/transaction-logs")
-    public DeferredResult<List<TransactionLogDTO>> getTransactionLogs(
-            @RequestHeader("Client-Id") String clientId) {
-        return transactionLogService.waitForNewTransactions(clientId);
-    }
+    // @GetMapping("/transaction-logs")
+    // public DeferredResult<List<TransactionLogDTO>> getTransactionLogs(
+    // @RequestHeader("Client-Id") String clientId) {
+    // return transactionLogService.waitForNewTransactions(clientId);
+    // }
+
 }
