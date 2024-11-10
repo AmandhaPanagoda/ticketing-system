@@ -2,6 +2,7 @@ package com.westminster.ticketing_system.controllers;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -51,13 +52,23 @@ public class AdminController {
 
     @PutMapping("/system-configuration")
     public ResponseEntity<?> updateSystemConfiguration(
-            @RequestHeader("userId") int userId,
+            @RequestHeader("Userid") int userId,
             @RequestBody SystemConfigurationDTO configurationDTO) {
         boolean success = adminService.updateSystemConfiguration(userId, configurationDTO);
         if (success) {
-            return ResponseEntity.ok("System configuration updated successfully");
+            return ResponseEntity.ok()
+                    .body(new HashMap<String, String>() {
+                        {
+                            put("message", "System configuration updated successfully");
+                        }
+                    });
         }
-        return ResponseEntity.badRequest().body("Failed to update system configuration");
+        return ResponseEntity.badRequest()
+                .body(new HashMap<String, String>() {
+                    {
+                        put("message", "Failed to update system configuration");
+                    }
+                });
     }
 
     @GetMapping("/system-configuration")
