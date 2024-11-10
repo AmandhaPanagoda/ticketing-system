@@ -65,6 +65,16 @@ public class AuthenticationController {
         return ResponseEntity.ok(createdUser);
     }
 
+    @PostMapping("/admin/signup")
+    public ResponseEntity<?> signupAdmin(@RequestBody SignupDTO signupDTO) {
+        if (authService.existsByEmail(signupDTO.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+        }
+
+        UserDTO createdUser = authService.signupVendor(signupDTO);
+        return ResponseEntity.ok(createdUser);
+    }
+
     @PostMapping("/authenticate")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest,
             HttpServletResponse response)
