@@ -24,12 +24,17 @@ public class CustomerControllerV2 {
     @PostMapping("/tickets/{userId}/{ticketCount}")
     public ResponseEntity<?> removeTicketsV2(@PathVariable int userId, @PathVariable int ticketCount) {
         try {
+            if (!threadManager.isSystemRunning()) {
+                return ResponseEntity.badRequest().body("System is not running");
+            }
             CustomerThread customerThread = new CustomerThread(ticketPool, userId, ticketCount);
             threadManager.addCustomerThread(customerThread);
             customerThread.start();
             return ResponseEntity.accepted()
                     .body(String.format("Processing request to purchase %d tickets from customer %d", ticketCount,
                             userId));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             log.error("Error processing customer request: {}", e.getMessage());
             return ResponseEntity.internalServerError()

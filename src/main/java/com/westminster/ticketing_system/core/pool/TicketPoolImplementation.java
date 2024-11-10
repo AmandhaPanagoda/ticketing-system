@@ -61,8 +61,10 @@ public class TicketPoolImplementation implements TicketPool {
 
     @Override
     public boolean addTickets(int ticketCount, int vendorId) throws InterruptedException {
-        if (!isRunning)
+        if (!isRunning) {
+            log.warn("Ticket pool is not running");
             return false;
+        }
 
         // Calculate available capacity
         int currentCount = getCurrentTicketCount();
@@ -129,8 +131,10 @@ public class TicketPoolImplementation implements TicketPool {
 
     @Override
     public boolean purchaseTickets(int count, int customerId) throws InterruptedException {
-        if (!isRunning)
+        if (!isRunning) {
+            log.warn("Ticket pool is not running");
             return false;
+        }
 
         SystemConfigurationDTO config = adminService.getSystemConfiguration();
         long retrievalRate = config.getCustomerRetrievalRate();
@@ -172,6 +176,7 @@ public class TicketPoolImplementation implements TicketPool {
                     }
                 }
             } catch (Exception e) {
+                log.error("Error purchasing tickets for customer {}: {}", customerId, e.getMessage());
                 availableTickets.release();
                 throw e;
             }

@@ -3,6 +3,7 @@ package com.westminster.ticketing_system.controllers;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
 import com.westminster.ticketing_system.dtos.TransactionLogDTO;
 import com.westminster.ticketing_system.services.admin.AdminService;
 import com.westminster.ticketing_system.services.transaction.TransactionLogService;
+import com.westminster.ticketing_system.core.threads.ThreadManager;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -25,6 +27,9 @@ public class AdminController {
 
     @Autowired
     private TransactionLogService transactionLogService;
+
+    @Autowired
+    private ThreadManager threadManager;
 
     @GetMapping("/tickets")
     public ResponseEntity<List<TicketDTO>> getAllTickets() {
@@ -77,10 +82,25 @@ public class AdminController {
         return ResponseEntity.ok(config);
     }
 
-    // @GetMapping("/transaction-logs")
-    // public DeferredResult<List<TransactionLogDTO>> getTransactionLogs(
-    // @RequestHeader("Client-Id") String clientId) {
-    // return transactionLogService.waitForNewTransactions(clientId);
-    // }
+    @PostMapping("/system")
+    public ResponseEntity<?> controlSystem(@RequestBody boolean start) {
+        try {
+            if (start) {
+                threadManager.startSystem();
+                return ResponseEntity.ok("System started successfully");
+            } else {
+                threadManager.stopSystem();
+                return ResponseEntity.ok("System stopped successfully");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("Failed to " + (start ? "start" : "stop") + " system: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/system/status")
+    public ResponseEntity<?> getSystemStatus() {
+        return ResponseEntity.ok(Map.of("running", threadManager.isSystemRunning()));
+    }
 
 }

@@ -28,11 +28,16 @@ public class VendorControllerV2 {
     @PostMapping("/tickets/{userId}/{ticketCount}")
     public ResponseEntity<?> addTicketsV2(@PathVariable int userId, @PathVariable int ticketCount) {
         try {
+            if (!threadManager.isSystemRunning()) {
+                return ResponseEntity.badRequest().body("System is not running");
+            }
             VendorThread vendorThread = new VendorThread(ticketPool, userId, ticketCount);
             threadManager.addVendorThread(vendorThread);
             vendorThread.start();
             return ResponseEntity.accepted()
                     .body(String.format("Processing request to add %d tickets from vendor %d", ticketCount, userId));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             log.error("Error processing vendor request: {}", e.getMessage());
             return ResponseEntity.internalServerError()
