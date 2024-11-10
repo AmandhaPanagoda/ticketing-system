@@ -1,8 +1,6 @@
 package com.westminster.ticketing_system.configs;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -34,16 +32,15 @@ public class SimpleCorsFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         System.out.println(httpRequest);
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        Map<String, String> headers = new HashMap<String, String>();
 
-        String origin = httpRequest.getHeader("origin");
         httpResponse.setHeader("Access-Control-Allow-Origin", "*");
         httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
         httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
         httpResponse.setHeader("Access-Control-Max-Age", "3600");
         httpResponse.setHeader("Access-Control-Allow-Headers",
-                "Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers");
-        httpResponse.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+                "Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, " +
+                        "Access-Control-Request-Method, Access-Control-Request-Headers");
+        httpResponse.setHeader("Access-Control-Expose-Headers", "Content-Disposition, Authorization");
 
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
             httpResponse.setStatus(HttpServletResponse.SC_OK);
