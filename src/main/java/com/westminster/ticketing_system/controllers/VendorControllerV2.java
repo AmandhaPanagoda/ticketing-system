@@ -25,17 +25,20 @@ public class VendorControllerV2 {
 
     // #region Version 2
 
-    @PostMapping("/tickets/{userId}/{ticketCount}")
-    public ResponseEntity<?> addTicketsV2(@PathVariable int userId, @PathVariable int ticketCount) {
+    @PostMapping("/tickets/{ticketCount}")
+    public ResponseEntity<?> addTicketsV2(
+            @RequestHeader("Userid") int userId,
+            @PathVariable int ticketCount) {
         try {
             if (!threadManager.isSystemRunning()) {
                 return ResponseEntity.badRequest().body("System is not running");
             }
+
             VendorThread vendorThread = new VendorThread(ticketPool, userId, ticketCount);
             threadManager.addVendorThread(vendorThread);
             vendorThread.start();
             return ResponseEntity.accepted()
-                    .body(String.format("Processing request to add %d tickets from vendor %d", ticketCount, userId));
+                    .body(String.format("Processing request to add %d tickets", ticketCount));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
@@ -46,7 +49,7 @@ public class VendorControllerV2 {
     }
 
     @GetMapping("/pool/status")
-    public ResponseEntity<?> getPoolStatus() {
+    public ResponseEntity<?> getPoolStatus(@RequestHeader("Userid") int userId) {
         return ResponseEntity.ok(Map.of(
                 "currentTicketCount", ticketPool.getCurrentTicketCount(),
                 "isFull", ticketPool.isPoolFull(),
