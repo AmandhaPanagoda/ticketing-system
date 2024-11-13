@@ -1,5 +1,7 @@
 package com.westminster.ticketing_system.controllers;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,8 +23,8 @@ public class CustomerControllerV2 {
     @Autowired
     private TicketPool ticketPool;
 
-    @PostMapping("/tickets/{userId}/{ticketCount}")
-    public ResponseEntity<?> removeTicketsV2(@PathVariable int userId, @PathVariable int ticketCount) {
+    @PostMapping("/tickets/{ticketCount}")
+    public ResponseEntity<?> removeTicketsV2(@RequestHeader("Userid") int userId, @PathVariable int ticketCount) {
         try {
             if (!threadManager.isSystemRunning()) {
                 return ResponseEntity.badRequest().body("System is not running");
@@ -40,6 +42,14 @@ public class CustomerControllerV2 {
             return ResponseEntity.internalServerError()
                     .body("Failed to process ticket purchase request");
         }
+    }
+
+    @GetMapping("/pool/status")
+    public ResponseEntity<?> getPoolStatus(@RequestHeader("Userid") int userId) {
+        return ResponseEntity.ok(Map.of(
+                "currentTicketCount", ticketPool.getCurrentTicketCount(),
+                "isFull", ticketPool.isPoolFull(),
+                "isEmpty", ticketPool.isPoolEmpty()));
     }
 
 }
