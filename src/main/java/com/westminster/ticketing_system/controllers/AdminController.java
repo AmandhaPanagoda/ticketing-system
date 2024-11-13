@@ -1,106 +1,185 @@
 package com.westminster.ticketing_system.controllers;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.async.DeferredResult;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.dtos.UserDTO;
 import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
-import com.westminster.ticketing_system.dtos.TransactionLogDTO;
 import com.westminster.ticketing_system.services.admin.AdminService;
-import com.westminster.ticketing_system.services.transaction.TransactionLogService;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * REST Controller handling administrative operations for the ticketing system
+ * Provides endpoints for user management, system configuration, and system
+ * control
+ */
 @RestController
 @RequestMapping("/api/v1/admin")
+@Slf4j
 public class AdminController {
 
     @Autowired
     private AdminService adminService;
 
     @Autowired
-    private TransactionLogService transactionLogService;
-
-    @Autowired
     private ThreadManager threadManager;
 
+    /**
+     * Retrieves all tickets in the system
+     */
     @GetMapping("/tickets")
     public ResponseEntity<List<TicketDTO>> getAllTickets() {
-        return ResponseEntity.ok(adminService.getAllTickets());
+        log.debug("Retrieving all tickets");
+        try {
+            return ResponseEntity.ok(adminService.getAllTickets());
+        } catch (Exception e) {
+            log.error("Error retrieving tickets: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
+    /**
+     * Retrieves all users in the system
+     */
     @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
-        return ResponseEntity.ok(adminService.getAllUsers());
+        log.debug("Retrieving all users");
+        try {
+            return ResponseEntity.ok(adminService.getAllUsers());
+        } catch (Exception e) {
+            log.error("Error retrieving users: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
+    /**
+     * Retrieves users filtered by role
+     * 
+     * @param role The role to filter users by
+     */
     @GetMapping("/users/{role}")
     public ResponseEntity<List<UserDTO>> getUsersByRole(@PathVariable String role) {
-        return ResponseEntity.ok(adminService.getUsersByRole(role.toUpperCase()));
+        log.debug("Retrieving users with role: {}", role);
+        try {
+            return ResponseEntity.ok(adminService.getUsersByRole(role.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid role requested: {}", role);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error retrieving users by role {}: {}", role, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
+    /**
+     * Deletes a user from the system
+     * 
+     * @param userId The ID of the user to delete
+     */
     @DeleteMapping("/user/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable int userId) {
-        boolean isDeleted = adminService.deleteUser(userId);
-        if (isDeleted) {
-            return ResponseEntity.ok("User deleted successfully");
+        log.info("Attempting to delete user with ID: {}", userId);
+        try {
+            boolean isDeleted = adminService.deleteUser(userId);
+            if (isDeleted) {
+                log.info("Successfully deleted user {}", userId);
+                return ResponseEntity.ok("User deleted successfully");
+            }
+            log.warn("Failed to delete user {}", userId);
+            return ResponseEntity.badRequest().body("Failed to delete user");
+        } catch (Exception e) {
+            log.error("Error deleting user {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body("An unexpected error occurred while deleting the user");
         }
-        return ResponseEntity.badRequest().body("Failed to delete user");
     }
 
+    /**
+     * Updates system configuration settings
+     * 
+     * @param userId           ID of the admin making the change
+     * @param configurationDTO New configuration settings
+     */
     @PutMapping("/system-configuration")
     public ResponseEntity<?> updateSystemConfiguration(
             @RequestHeader("Userid") int userId,
             @RequestBody SystemConfigurationDTO configurationDTO) {
-        boolean success = adminService.updateSystemConfiguration(userId, configurationDTO);
-        if (success) {
-            return ResponseEntity.ok()
-                    .body(new HashMap<String, String>() {
-                        {
-                            put("message", "System configuration updated successfully");
-                        }
-                    });
+        log.info("Admin {} attempting to update system configuration", userId);
+        try {
+            boolean success = adminService.updateSystemConfiguration(userId, configurationDTO);
+            if (success) {
+                log.info("System configuration successfully updated by admin {}", userId);
+                return ResponseEntity.ok(Map.of("message", "System configuration updated successfully"));
+            }
+            log.warn("Failed to update system configuration by admin {}", userId);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Failed to update system configuration"));
+        } catch (Exception e) {
+            log.error("Error updating system configuration by admin {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "An unexpected error occurred while updating configuration"));
         }
-        return ResponseEntity.badRequest()
-                .body(new HashMap<String, String>() {
-                    {
-                        put("message", "Failed to update system configuration");
-                    }
-                });
     }
 
+    /**
+     * Retrieves current system configuration
+     */
     @GetMapping("/system-configuration")
     public ResponseEntity<SystemConfigurationDTO> getSystemConfiguration() {
-        SystemConfigurationDTO config = adminService.getSystemConfiguration();
-        return ResponseEntity.ok(config);
+        log.debug("Retrieving system configuration");
+        try {
+            SystemConfigurationDTO config = adminService.getSystemConfiguration();
+            return ResponseEntity.ok(config);
+        } catch (Exception e) {
+            log.error("Error retrieving system configuration: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
+    /**
+     * Controls system start/stop operations
+     * 
+     * @param start true to start the system, false to stop
+     */
     @PostMapping("/system")
     public ResponseEntity<?> controlSystem(@RequestBody boolean start) {
+        log.info("Attempting to {} system", start ? "start" : "stop");
         try {
             if (start) {
                 threadManager.startSystem();
+                log.info("System started successfully");
                 return ResponseEntity.ok("System started successfully");
             } else {
                 threadManager.stopSystem();
+                log.info("System stopped successfully");
                 return ResponseEntity.ok("System stopped successfully");
             }
         } catch (Exception e) {
+            log.error("Failed to {} system: {}", start ? "start" : "stop", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body("Failed to " + (start ? "start" : "stop") + " system: " + e.getMessage());
         }
     }
 
+    /**
+     * Retrieves current system running status
+     */
     @GetMapping("/system/status")
     public ResponseEntity<?> getSystemStatus() {
-        return ResponseEntity.ok(Map.of("running", threadManager.isSystemRunning()));
+        log.debug("Retrieving system status");
+        try {
+            return ResponseEntity.ok(Map.of("running", threadManager.isSystemRunning()));
+        } catch (Exception e) {
+            log.error("Error retrieving system status: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body("Failed to retrieve system status");
+        }
     }
-
 }
