@@ -12,6 +12,12 @@ import com.westminster.ticketing_system.services.vendor.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @deprecated This is a legacy V1 controller for vendor operations.
+ *             This version is maintained for backward compatibility but is no
+ *             longer actively used.
+ *             Please refer to V2 API endpoints for new implementations.
+ */
 @RestController
 @RequestMapping("/api/v1/vendor")
 @Slf4j

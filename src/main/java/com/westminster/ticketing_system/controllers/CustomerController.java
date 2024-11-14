@@ -9,6 +9,12 @@ import com.westminster.ticketing_system.services.Customer.CustomerService;
 
 import java.util.List;
 
+/**
+ * @deprecated This is a legacy V1 controller for customer operations.
+ *             This version is maintained for backward compatibility but is no
+ *             longer actively used.
+ *             Please refer to V2 API endpoints for new implementations.
+ */
 @RestController
 @RequestMapping("/api/v1/customer")
 public class CustomerController {
