@@ -11,5 +11,7 @@ public interface TicketPool {
 
     boolean isPoolEmpty();
 
+    boolean isRunning();
+
     void shutdown();
 }
