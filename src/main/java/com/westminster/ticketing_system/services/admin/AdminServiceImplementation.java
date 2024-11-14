@@ -108,6 +108,6 @@ public class AdminServiceImplementation implements AdminService {
         }
 
         // Return default values if no configuration exists
-        return new SystemConfigurationDTO(100, 10, 5, 1000);
+        return new SystemConfigurationDTO(100, 6000, 3000, 500);
     }
 }
