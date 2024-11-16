@@ -11,27 +11,12 @@ import lombok.Data;
  */
 @Data
 public class UserDTO {
-    /** User's unique identifier */
     private int id;
-
-    /** Username */
     private String username;
-
-    /** User's first name */
     private String firstName;
-
-    /** User's last name */
     private String lastName;
-
-    /** User's email address */
     private String email;
-
-    /** User's phone number */
     private long phoneNumber;
-
-    /** User's password */
     private String password;
-
-    /** User's role in the system */
     private UserRole role;
 }

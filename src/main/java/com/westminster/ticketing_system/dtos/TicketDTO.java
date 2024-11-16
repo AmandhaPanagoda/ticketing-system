@@ -12,30 +12,13 @@ import lombok.Data;
  */
 @Data
 public class TicketDTO {
-    /** Ticket's unique identifier */
     private int id;
-
-    /** Title of the ticket */
     private String title;
-
-    /** Price of the ticket */
     private BigDecimal price;
-
-    /** Detailed description of the ticket */
     private String description;
-
-    /** Uploaded image file for the ticket */
     private MultipartFile image;
-
-    /** Image data for displaying the ticket */
     private byte[] returnedImage;
-
-    /** ID of the user who owns the ticket */
     private int userId;
-
-    /** Username of the ticket owner */
     private String username;
-
-    /** Flag indicating if the ticket has been deleted */
     private boolean deletedInd;
 }

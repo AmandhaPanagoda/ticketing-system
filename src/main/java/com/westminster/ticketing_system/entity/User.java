@@ -23,30 +23,15 @@ import jakarta.persistence.GenerationType;
 @Setter
 public class User {
 
-    /** Unique identifier for the user */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-
-    /** Username */
     private String username;
-
-    /** User's first name */
     private String firstName;
-
-    /** User's last name */
     private String lastName;
-
-    /** User's email address */
     private String email;
-
-    /** User's encrypted password */
     private String password;
-
-    /** User's phone number */
     private long phoneNumber;
-
-    /** User's role in the system */
     private UserRole role;
 
     /**

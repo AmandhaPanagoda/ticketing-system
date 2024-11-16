@@ -10,7 +10,5 @@ import lombok.Data;
 public class AuthenticationRequest {
     /** Username for authentication, actually the email */
     private String username;
-
-    /** Password for authentication */
     private String password;
 }
