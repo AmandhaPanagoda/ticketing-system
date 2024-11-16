@@ -3,6 +3,7 @@ package com.westminster.ticketing_system.services.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.westminster.ticketing_system.dtos.TicketDTO;
+import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 import com.westminster.ticketing_system.entity.Ticket;
 import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.repository.TicketRepository;
@@ -108,5 +109,39 @@ public class CustomerServiceImplementation implements CustomerService {
                     ticketId, userId, e);
             return false;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     * Retrieves ticket summaries for all non-deleted tickets associated with the
+     * specified customer.
+     * Returns empty list in case of errors or if customer not found.
+     */
+    @Override
+    public List<TicketSummaryDTO> getCustomerTicketSummaries(int userId) {
+        log.info("Fetching ticket summaries for customer ID: {}", userId);
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if (optionalUser.isPresent()) {
+            try {
+                List<Ticket> tickets = ticketRepository.findByPurchaserId(userId);
+                return tickets.stream()
+                        .filter(ticket -> !ticket.isDeletedInd())
+                        .map(ticket -> {
+                            TicketSummaryDTO summary = new TicketSummaryDTO();
+                            summary.setTicketId(ticket.getId());
+                            summary.setVendorUsername(ticket.getUser().getUsername());
+                            summary.setPurchaserUsername(optionalUser.get().getUsername());
+                            summary.setCreatedDateTime(ticket.getCreatedDateTime());
+                            summary.setPurchasedDateTime(ticket.getPurchasedDateTime());
+                            return summary;
+                        })
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                log.error("Error while fetching ticket summaries for customer ID: {}", userId, e);
+                return new ArrayList<>();
+            }
+        }
+        log.warn("User not found with ID: {}", userId);
+        return new ArrayList<>();
     }
 }

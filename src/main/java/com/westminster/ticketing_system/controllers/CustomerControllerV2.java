@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.westminster.ticketing_system.core.threads.CustomerThread;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.dtos.TicketDTO;
+import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.services.Customer.CustomerService;
 
@@ -98,7 +99,7 @@ public class CustomerControllerV2 {
     public ResponseEntity<?> getCustomerTickets(@RequestHeader("Userid") int userId) {
         try {
             log.info("Fetching tickets for customer with ID: {}", userId);
-            List<TicketDTO> tickets = customerService.getCustomerTickets(userId);
+            List<TicketSummaryDTO> tickets = customerService.getCustomerTicketSummaries(userId);
             log.info("Successfully retrieved {} tickets for customer ID: {}", tickets.size(), userId);
             return ResponseEntity.ok(tickets);
         } catch (Exception e) {

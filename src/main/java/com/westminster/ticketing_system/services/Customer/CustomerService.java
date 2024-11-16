@@ -3,6 +3,7 @@ package com.westminster.ticketing_system.services.Customer;
 import java.util.List;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
+import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 
 /**
  * Service interface for managing customer-related ticket operations.
@@ -31,4 +32,13 @@ public interface CustomerService {
      * @return true if purchase was successful, false otherwise
      */
     boolean purchaseTicket(int ticketId, int userId);
+
+    /**
+     * Retrieves ticket summaries for all active tickets for a specific customer.
+     *
+     * @param userId The ID of the customer
+     * @return List of ticket summaries associated with the customer, empty list if
+     *         none found
+     */
+    List<TicketSummaryDTO> getCustomerTicketSummaries(int userId);
 }
