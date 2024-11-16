@@ -1,5 +1,6 @@
 package com.westminster.ticketing_system.controllers;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.core.threads.CustomerThread;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
+import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.core.pool.TicketPool;
+import com.westminster.ticketing_system.services.Customer.CustomerService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,6 +28,9 @@ public class CustomerControllerV2 {
 
     @Autowired
     private TicketPool ticketPool;
+
+    @Autowired
+    private CustomerService customerService;
 
     /**
      * Asynchronously processes ticket purchase requests from customers
@@ -82,6 +88,23 @@ public class CustomerControllerV2 {
             log.error("Error retrieving pool status for customer {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve pool status");
+        }
+    }
+
+    /**
+     * Retrieves all tickets for a specific customer
+     */
+    @GetMapping("/tickets")
+    public ResponseEntity<?> getCustomerTickets(@RequestHeader("Userid") int userId) {
+        try {
+            log.info("Fetching tickets for customer with ID: {}", userId);
+            List<TicketDTO> tickets = customerService.getCustomerTickets(userId);
+            log.info("Successfully retrieved {} tickets for customer ID: {}", tickets.size(), userId);
+            return ResponseEntity.ok(tickets);
+        } catch (Exception e) {
+            log.error("Error fetching tickets for customer ID: {}", userId, e);
+            return ResponseEntity.internalServerError()
+                    .body("An unexpected error occurred while processing your request");
         }
     }
 }
