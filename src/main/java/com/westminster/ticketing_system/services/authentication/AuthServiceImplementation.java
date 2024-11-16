@@ -36,7 +36,7 @@ public class AuthServiceImplementation implements AuthService {
         user.setEmail(signupDTO.getEmail());
         user.setPhoneNumber(signupDTO.getPhoneNumber());
         user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
-        user.setRole(UserRole.ADMIN);
+        user.setRole(UserRole.VENDOR);
 
         return userRepository.save(user).getDto();
     }
