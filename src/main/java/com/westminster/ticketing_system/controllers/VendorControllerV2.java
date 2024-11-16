@@ -13,6 +13,7 @@ import com.westminster.ticketing_system.core.threads.VendorThread;
 import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.services.vendor.VendorService;
+import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -98,12 +99,12 @@ public class VendorControllerV2 {
     @GetMapping("/tickets")
     public ResponseEntity<?> getVendorTickets(@RequestHeader("Userid") int userId) {
         try {
-            log.info("Fetching tickets for vendor with ID: {}", userId);
-            List<TicketDTO> tickets = vendorService.getVendorTickets(userId);
-            log.info("Successfully retrieved {} tickets for vendor ID: {}", tickets.size(), userId);
+            log.info("Fetching ticket summaries for vendor with ID: {}", userId);
+            List<TicketSummaryDTO> tickets = vendorService.getVendorTicketSummaries(userId);
+            log.info("Successfully retrieved {} ticket summaries for vendor ID: {}", tickets.size(), userId);
             return ResponseEntity.ok(tickets);
         } catch (Exception e) {
-            log.error("Error fetching tickets for vendor ID: {}", userId, e);
+            log.error("Error fetching ticket summaries for vendor ID: {}", userId, e);
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while processing your request");
         }

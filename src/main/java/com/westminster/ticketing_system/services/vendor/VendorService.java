@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
+import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 
 /**
  * Service interface for managing vendor-related ticket operations.
@@ -45,4 +46,13 @@ public interface VendorService {
      * @return true if ticket was successfully deleted, false otherwise
      */
     boolean deleteTicket(int ticketId, int userId);
+
+    /**
+     * Retrieves ticket summaries for all active tickets for a specific vendor.
+     *
+     * @param userId The ID of the vendor
+     * @return List of ticket summaries associated with the vendor, empty list if
+     *         none found
+     */
+    List<TicketSummaryDTO> getVendorTicketSummaries(int userId);
 }
