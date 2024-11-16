@@ -44,4 +44,8 @@ public class AuthServiceImplementation implements AuthService {
     public Boolean existsByEmail(String email) {
         return userRepository.findByEmail(email) != null;
     }
+
+    public Boolean existsByUsername(String username) {
+        return userRepository.findByUsername(username) != null;
+    }
 }

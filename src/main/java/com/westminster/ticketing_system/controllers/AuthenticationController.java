@@ -67,6 +67,11 @@ public class AuthenticationController {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
             }
 
+            if (authService.existsByUsername(signupDTO.getUsername())) {
+                log.warn("Signup failed - Username already exists: {}", signupDTO.getUsername());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+            }
+
             UserDTO createdUser = authService.signupCustomer(signupDTO);
             log.info("Successfully created customer account for: {}", signupDTO.getEmail());
             return ResponseEntity.ok(createdUser);
@@ -90,6 +95,11 @@ public class AuthenticationController {
             if (authService.existsByEmail(signupDTO.getEmail())) {
                 log.warn("Signup failed - Email already exists: {}", signupDTO.getEmail());
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+            }
+
+            if (authService.existsByUsername(signupDTO.getUsername())) {
+                log.warn("Signup failed - Username already exists: {}", signupDTO.getUsername());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
             }
 
             UserDTO createdUser = authService.signupVendor(signupDTO);

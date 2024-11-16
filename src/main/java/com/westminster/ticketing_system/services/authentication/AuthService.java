@@ -9,4 +9,6 @@ public interface AuthService {
     UserDTO signupVendor(SignupDTO signupDTO);
 
     Boolean existsByEmail(String email);
+
+    Boolean existsByUsername(String username);
 }
