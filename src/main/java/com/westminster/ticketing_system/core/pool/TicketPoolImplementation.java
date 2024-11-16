@@ -89,6 +89,7 @@ public class TicketPoolImplementation implements TicketPool {
      */
     @Override
     public boolean addTickets(int ticketCount, int vendorId) throws InterruptedException {
+        notifyPoolStatusChange(); // Notify clients of the current pool status
         if (!isRunning) {
             log.warn("Ticket pool is not running - rejecting tickets from vendor {}", vendorId);
             return false;
@@ -171,6 +172,7 @@ public class TicketPoolImplementation implements TicketPool {
      */
     @Override
     public boolean purchaseTickets(int count, int customerId) throws InterruptedException {
+        notifyPoolStatusChange(); // Notify clients of the current pool status
         if (!isRunning) {
             log.warn("Ticket pool is not running - rejecting purchase from customer {}", customerId);
             return false;
@@ -232,59 +234,141 @@ public class TicketPoolImplementation implements TicketPool {
         }
     }
 
+    /**
+     * Gracefully shuts down the ticket pool.
+     * Prevents new tickets from being added or purchased while allowing ongoing
+     * transactions to complete.
+     */
     @Override
     public void shutdown() {
+        log.info("Initiating ticket pool shutdown");
         isRunning = false;
+        log.info("Ticket pool has been shut down. No new transactions will be accepted");
     }
 
+    /**
+     * Returns the current number of available tickets in the pool.
+     * This is a lightweight operation that provides a snapshot of the pool size.
+     *
+     * @return The current number of tickets available for purchase
+     */
     @Override
     public int getCurrentTicketCount() {
-        return ticketQueue.size();
+        int count = ticketQueue.size();
+        log.debug("Current ticket count in pool: {}", count);
+        return count;
     }
 
+    /**
+     * Checks if the ticket pool has reached its maximum capacity.
+     * Maximum capacity is determined by the system configuration and can be
+     * adjusted dynamically.
+     *
+     * @return true if the pool is at capacity, false otherwise
+     */
     @Override
     public boolean isPoolFull() {
         SystemConfigurationDTO config = adminService.getSystemConfiguration();
-        return ticketQueue.size() >= config.getMaxTicketCapacity();
+        int maxCapacity = config.getMaxTicketCapacity();
+        boolean isFull = ticketQueue.size() >= maxCapacity;
+        log.debug("Pool capacity check - Current size: {}, Max capacity: {}, Is full: {}",
+                ticketQueue.size(), maxCapacity, isFull);
+        return isFull;
     }
 
+    /**
+     * Checks if the ticket pool has no available tickets.
+     *
+     * @return true if there are no tickets available, false otherwise
+     */
     @Override
     public boolean isPoolEmpty() {
-        return ticketQueue.isEmpty();
+        boolean isEmpty = ticketQueue.isEmpty();
+        log.debug("Pool empty check - Is empty: {}", isEmpty);
+        return isEmpty;
     }
 
-    private List<Ticket> generateTicketBatch(int ticketCount, int vendorId) { // needs to be implemented in a better way
-        List<Ticket> tickets = new ArrayList<>();
-
-        for (int i = 0; i < ticketCount; i++) {
-            Ticket ticket = new Ticket();
-
-            ticket.setTitle("Test Ticket " + i);
-            ticket.setDescription("Test Description for ticket " + i);
-            ticket.setUpdatedDateTime(LocalDateTime.now());
-            ticket.setUser(userRepository.findById(vendorId).get());
-            ticket.setPrice(BigDecimal.valueOf(100.00));
-            ticket.setCreatedDateTime(LocalDateTime.now());
-
-            tickets.add(ticket);
-
-            log.debug("Generated ticket: Title={}, Price=${}, VendorId={}",
-                    ticket.getTitle(), ticket.getPrice());
-        }
-
-        return tickets;
-    }
-
+    /**
+     * Checks if the ticket pool is currently operational.
+     *
+     * @return true if the pool is accepting transactions, false if shutdown
+     */
     @Override
     public boolean isRunning() {
+        log.trace("Pool status check - Is running: {}", isRunning);
         return isRunning;
     }
 
+    /**
+     * Generates a batch of tickets with specified properties.
+     * 
+     * @param ticketCount Number of tickets to generate
+     * @param vendorId    ID of the vendor creating the tickets
+     * @return List of generated ticket entities
+     * @throws IllegalArgumentException if vendorId is invalid
+     * @throws IllegalStateException    if ticket generation fails
+     */
+    private List<Ticket> generateTicketBatch(int ticketCount, int vendorId) {
+        log.info("Generating batch of {} tickets for vendor {}", ticketCount, vendorId);
+        List<Ticket> tickets = new ArrayList<>();
+
+        try {
+            var vendor = userRepository.findById(vendorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid vendor ID: " + vendorId));
+
+            for (int i = 0; i < ticketCount; i++) {
+                Ticket ticket = new Ticket();
+                LocalDateTime now = LocalDateTime.now();
+
+                ticket.setTitle("Test Ticket " + i);
+                ticket.setDescription("Test Description for ticket " + i);
+                ticket.setUpdatedDateTime(now);
+                ticket.setUser(vendor);
+                ticket.setPrice(BigDecimal.valueOf(100.00));
+                ticket.setCreatedDateTime(now);
+
+                tickets.add(ticket);
+
+                log.debug("Generated ticket - ID: {}, Title: {}, Price: ${}, VendorId: {}",
+                        ticket.getId(), ticket.getTitle(), ticket.getPrice(), vendorId);
+            }
+
+            log.info("Successfully generated {} tickets for vendor {}", ticketCount, vendorId);
+            return tickets;
+
+        } catch (Exception e) {
+            log.error("Failed to generate ticket batch - Vendor: {}, Count: {}, Error: {}",
+                    vendorId, ticketCount, e.getMessage(), e);
+            throw new IllegalStateException("Failed to generate tickets", e);
+        }
+    }
+
+    private int getAvailableSpace() {
+        return maxPoolSize - getCurrentTicketCount();
+    }
+
+    /**
+     * Broadcasts pool status changes to connected clients via WebSocket.
+     * This method is called after significant pool state changes to keep clients
+     * informed.
+     * 
+     * @throws RuntimeException if the WebSocket message cannot be sent
+     */
     private void notifyPoolStatusChange() {
-        Map<String, Object> status = Map.of(
-                "currentTicketCount", getCurrentTicketCount(),
-                "isFull", isPoolFull(),
-                "isEmpty", isPoolEmpty());
-        messagingTemplate.convertAndSend("/topic/pool-status", status);
+        try {
+            Map<String, Object> status = Map.of(
+                    "currentTicketCount", getCurrentTicketCount(),
+                    "isFull", isPoolFull(),
+                    "isEmpty", isPoolEmpty(),
+                    "availableSpace", getAvailableSpace(),
+                    "isRunning", isRunning());
+
+            log.debug("Broadcasting pool status update - Status: {}", status);
+            messagingTemplate.convertAndSend("/topic/pool-status", status);
+
+        } catch (Exception e) {
+            log.error("Failed to broadcast pool status update: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to notify pool status change", e);
+        }
     }
 }

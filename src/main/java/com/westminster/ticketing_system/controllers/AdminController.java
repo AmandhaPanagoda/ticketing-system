@@ -11,6 +11,7 @@ import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.dtos.UserDTO;
 import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
 import com.westminster.ticketing_system.services.admin.AdminService;
+import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,9 @@ public class AdminController {
 
     @Autowired
     private ThreadManager threadManager;
+
+    @Autowired
+    private TicketPool ticketPool;
 
     /**
      * Retrieves all tickets in the system
@@ -180,6 +184,25 @@ public class AdminController {
             log.error("Error retrieving system status: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve system status");
+        }
+    }
+
+    /**
+     * Retrieves current status of the ticket pool
+     */
+    @GetMapping("/pool/status")
+    public ResponseEntity<?> getPoolStatus(@RequestHeader("Userid") int userId) {
+        log.debug("Pool status requested by admin {}", userId);
+        try {
+            return ResponseEntity.ok(Map.of(
+                    "currentTicketCount", ticketPool.getCurrentTicketCount(),
+                    "isFull", ticketPool.isPoolFull(),
+                    "isEmpty", ticketPool.isPoolEmpty(),
+                    "isRunning", ticketPool.isRunning()));
+        } catch (Exception e) {
+            log.error("Error retrieving pool status for admin {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body("Failed to retrieve pool status");
         }
     }
 }

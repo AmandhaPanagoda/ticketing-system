@@ -76,7 +76,8 @@ public class CustomerControllerV2 {
             return ResponseEntity.ok(Map.of(
                     "currentTicketCount", ticketPool.getCurrentTicketCount(),
                     "isFull", ticketPool.isPoolFull(),
-                    "isEmpty", ticketPool.isPoolEmpty()));
+                    "isEmpty", ticketPool.isPoolEmpty(),
+                    "isRunning", ticketPool.isRunning()));
         } catch (Exception e) {
             log.error("Error retrieving pool status for customer {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError()
