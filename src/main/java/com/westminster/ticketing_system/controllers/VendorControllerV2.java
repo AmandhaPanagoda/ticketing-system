@@ -1,5 +1,6 @@
 package com.westminster.ticketing_system.controllers;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.core.threads.VendorThread;
+import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.core.pool.TicketPool;
+import com.westminster.ticketing_system.services.vendor.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +29,9 @@ public class VendorControllerV2 {
 
     @Autowired
     private TicketPool ticketPool;
+
+    @Autowired
+    private VendorService vendorService;
 
     /**
      * Asynchronously processes ticket addition requests from vendors
@@ -83,6 +89,23 @@ public class VendorControllerV2 {
             log.error("Error retrieving pool status for vendor {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve pool status");
+        }
+    }
+
+    /**
+     * Retrieves all tickets for a specific vendor
+     */
+    @GetMapping("/tickets")
+    public ResponseEntity<?> getVendorTickets(@RequestHeader("Userid") int userId) {
+        try {
+            log.info("Fetching tickets for vendor with ID: {}", userId);
+            List<TicketDTO> tickets = vendorService.getVendorTickets(userId);
+            log.info("Successfully retrieved {} tickets for vendor ID: {}", tickets.size(), userId);
+            return ResponseEntity.ok(tickets);
+        } catch (Exception e) {
+            log.error("Error fetching tickets for vendor ID: {}", userId, e);
+            return ResponseEntity.internalServerError()
+                    .body("An unexpected error occurred while processing your request");
         }
     }
 }
