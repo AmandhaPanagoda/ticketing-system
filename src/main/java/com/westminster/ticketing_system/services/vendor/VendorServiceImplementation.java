@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
+import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 import com.westminster.ticketing_system.entity.Ticket;
 import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.repository.TicketRepository;
@@ -152,5 +153,40 @@ public class VendorServiceImplementation implements VendorService {
         }
         log.warn("Ticket not found, already deleted, or unauthorized access for ticket ID: {}", ticketId);
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     * Retrieves ticket summaries for all non-deleted tickets associated with the
+     * specified vendor.
+     * Returns empty list in case of errors or if vendor not found.
+     */
+    @Override
+    public List<TicketSummaryDTO> getVendorTicketSummaries(int userId) {
+        log.info("Fetching ticket summaries for vendor ID: {}", userId);
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if (optionalUser.isPresent()) {
+            try {
+                List<Ticket> tickets = ticketRepository.findByUserId(userId);
+                return tickets.stream()
+                        .filter(ticket -> !ticket.isDeletedInd())
+                        .map(ticket -> {
+                            TicketSummaryDTO summary = new TicketSummaryDTO();
+                            summary.setTicketId(ticket.getId());
+                            summary.setVendorUsername(ticket.getUser().getUsername());
+                            summary.setPurchaserUsername(
+                                    ticket.getPurchaser() != null ? ticket.getPurchaser().getUsername() : null);
+                            summary.setCreatedDateTime(ticket.getCreatedDateTime());
+                            summary.setPurchasedDateTime(ticket.getPurchasedDateTime());
+                            return summary;
+                        })
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                log.error("Error while fetching ticket summaries for vendor ID: {}", userId, e);
+                return new ArrayList<>();
+            }
+        }
+        log.warn("User not found with ID: {}", userId);
+        return new ArrayList<>();
     }
 }
