@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.core.threads.VendorThread;
-import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.services.vendor.VendorService;
 import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
@@ -22,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RestController
 @RequestMapping("/api/v2/vendor")
+@PreAuthorize("hasRole('VENDOR')")
 @Slf4j
 public class VendorControllerV2 {
 
@@ -85,7 +85,7 @@ public class VendorControllerV2 {
                     "currentTicketCount", ticketPool.getCurrentTicketCount(),
                     "isFull", ticketPool.isPoolFull(),
                     "isEmpty", ticketPool.isPoolEmpty(),
-                    "isRunning", ticketPool.isRunning()));
+                    "isRunning", threadManager.isSystemRunning()));
         } catch (Exception e) {
             log.error("Error retrieving pool status for vendor {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError()

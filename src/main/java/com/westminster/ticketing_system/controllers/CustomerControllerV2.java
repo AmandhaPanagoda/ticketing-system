@@ -5,11 +5,11 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.core.threads.CustomerThread;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
-import com.westminster.ticketing_system.dtos.TicketDTO;
 import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.services.Customer.CustomerService;
@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RestController
 @RequestMapping("/api/v2/customer")
+@PreAuthorize("hasRole('CUSTOMER')")
 @Slf4j
 public class CustomerControllerV2 {
 
