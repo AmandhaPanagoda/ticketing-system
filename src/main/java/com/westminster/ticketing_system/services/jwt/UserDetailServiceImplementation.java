@@ -1,6 +1,7 @@
 package com.westminster.ticketing_system.services.jwt;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -10,6 +11,7 @@ import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.repository.UserRepository;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserDetailServiceImplementation implements UserDetailsService {
@@ -23,8 +25,13 @@ public class UserDetailServiceImplementation implements UserDetailsService {
         if (user == null) {
             throw new UsernameNotFoundException("User not found", null);
         }
-        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(),
-                new ArrayList<>());
-    }
 
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(),
+                user.getPassword(),
+                authorities);
+    }
 }
