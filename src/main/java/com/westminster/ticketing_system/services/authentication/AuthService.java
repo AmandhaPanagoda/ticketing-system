@@ -11,4 +11,8 @@ public interface AuthService {
     Boolean existsByEmail(String email);
 
     Boolean existsByUsername(String username);
+
+    Boolean isDeleted(String email);
+
+    UserDTO getUserByEmail(String email);
 }

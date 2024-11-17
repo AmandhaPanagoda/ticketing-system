@@ -33,6 +33,7 @@ public class User {
     private String password;
     private long phoneNumber;
     private UserRole role;
+    private Boolean isDeleted;
 
     /**
      * Converts the entity to its DTO representation.

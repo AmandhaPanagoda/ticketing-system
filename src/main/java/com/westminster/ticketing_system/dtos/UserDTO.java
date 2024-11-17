@@ -19,4 +19,5 @@ public class UserDTO {
     private long phoneNumber;
     private String password;
     private UserRole role;
+    private Boolean isDeleted;
 }

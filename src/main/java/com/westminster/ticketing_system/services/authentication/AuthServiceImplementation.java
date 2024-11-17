@@ -48,4 +48,16 @@ public class AuthServiceImplementation implements AuthService {
     public Boolean existsByUsername(String username) {
         return userRepository.findByUsername(username) != null;
     }
+
+    @Override
+    public Boolean isDeleted(String email) {
+        User user = userRepository.findByEmail(email);
+        return user != null && user.getIsDeleted();
+    }
+
+    @Override
+    public UserDTO getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email);
+        return user != null ? user.getDto() : null;
+    }
 }
