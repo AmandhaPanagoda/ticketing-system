@@ -1,8 +1,5 @@
 package com.westminster.ticketing_system.controllers;
 
-import java.io.IOException;
-
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,8 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.dtos.*;
-import com.westminster.ticketing_system.entity.User;
-import com.westminster.ticketing_system.repository.UserRepository;
 import com.westminster.ticketing_system.services.authentication.AuthService;
 import com.westminster.ticketing_system.services.jwt.UserDetailServiceImplementation;
 import com.westminster.ticketing_system.util.JwtUtil;
@@ -48,9 +43,6 @@ public class AuthenticationController {
 
     @Autowired
     private JwtUtil jwtUtil;
-
-    @Autowired
-    private UserRepository userRepository;
 
     /**
      * Handles customer registration
@@ -132,13 +124,13 @@ public class AuthenticationController {
                             authenticationRequest.getUsername(),
                             authenticationRequest.getPassword()));
 
+            // Get user details
+            UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
+
             // Generate token
             final UserDetails userDetails = userDetailServiceImplementation
                     .loadUserByUsername(authenticationRequest.getUsername());
             final String jwt = jwtUtil.generateToken(userDetails.getUsername());
-
-            // Get user details
-            User user = userRepository.findByEmail(authenticationRequest.getUsername());
 
             // Prepare response
             JSONObject responseBody = new JSONObject()
