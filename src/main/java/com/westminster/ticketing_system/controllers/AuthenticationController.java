@@ -118,14 +118,20 @@ public class AuthenticationController {
         log.info("Processing authentication request for user: {}", authenticationRequest.getUsername());
 
         try {
+            // Check if user is deleted
+            UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
+            if (user.getIsDeleted()) {
+                log.warn("Authentication failed for user {}: Account deactivated",
+                        authenticationRequest.getUsername());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Account has been deactivated. Please contact support.");
+            }
+
             // Authenticate user
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             authenticationRequest.getUsername(),
                             authenticationRequest.getPassword()));
-
-            // Get user details
-            UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
 
             // Generate token
             final UserDetails userDetails = userDetailServiceImplementation

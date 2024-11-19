@@ -43,6 +43,7 @@ public class AdminServiceImplementation implements AdminService {
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
+                .filter(user -> user.getRole() != UserRole.ADMIN)
                 .map(User::getDto)
                 .collect(Collectors.toList());
     }
@@ -59,7 +60,9 @@ public class AdminServiceImplementation implements AdminService {
     public boolean deleteUser(int userId) {
         Optional<User> optionalUser = userRepository.findById(userId);
         if (optionalUser.isPresent() && optionalUser.get().getRole() != UserRole.ADMIN) {
-            userRepository.deleteById(userId);
+            User user = optionalUser.get();
+            user.setIsDeleted(true);
+            userRepository.save(user);
             return true;
         }
         return false;

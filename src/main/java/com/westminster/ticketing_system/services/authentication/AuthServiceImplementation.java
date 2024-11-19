@@ -24,6 +24,7 @@ public class AuthServiceImplementation implements AuthService {
         user.setPhoneNumber(signupDTO.getPhoneNumber());
         user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
         user.setRole(UserRole.CUSTOMER);
+        user.setIsDeleted(false);
 
         return userRepository.save(user).getDto();
     }
@@ -37,6 +38,7 @@ public class AuthServiceImplementation implements AuthService {
         user.setPhoneNumber(signupDTO.getPhoneNumber());
         user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
         user.setRole(UserRole.VENDOR);
+        user.setIsDeleted(false);
 
         return userRepository.save(user).getDto();
     }

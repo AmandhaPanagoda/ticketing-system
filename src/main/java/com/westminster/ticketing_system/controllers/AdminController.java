@@ -89,7 +89,7 @@ public class AdminController {
      * 
      * @param userId The ID of the user to delete
      */
-    @DeleteMapping("/user/{userId}")
+    @DeleteMapping("/users/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable int userId) {
         log.info("Attempting to delete user with ID: {}", userId);
         try {

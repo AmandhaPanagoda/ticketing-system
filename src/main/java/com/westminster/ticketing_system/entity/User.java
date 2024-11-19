@@ -5,6 +5,7 @@ import org.springframework.beans.BeanUtils;
 import com.westminster.ticketing_system.dtos.UserDTO;
 import com.westminster.ticketing_system.enums.UserRole;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -33,6 +34,8 @@ public class User {
     private String password;
     private long phoneNumber;
     private UserRole role;
+
+    @Column(name = "deleted_ind", nullable = false)
     private Boolean isDeleted;
 
     /**
