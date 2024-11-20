@@ -14,6 +14,8 @@ public interface AdminService {
 
     boolean deleteUser(int userId);
 
+    boolean activateUser(int userId);
+
     boolean updateSystemConfiguration(int userId, SystemConfigurationDTO configurationDTO);
 
     SystemConfigurationDTO getSystemConfiguration();

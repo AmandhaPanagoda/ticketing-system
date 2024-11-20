@@ -89,6 +89,29 @@ public class AdminController {
     }
 
     /**
+     * Activates a user
+     * 
+     * @param userId The ID of the user to activate
+     */
+    @PutMapping("/users/{userId}/activate")
+    public ResponseEntity<?> activateUser(@PathVariable int userId) {
+        log.info("Attempting to activate user with ID: {}", userId);
+        try {
+            boolean isActivated = adminService.activateUser(userId);
+            if (isActivated) {
+                log.info("Successfully activated user {}", userId);
+                return ResponseEntity.ok("User activated successfully");
+            }
+            log.warn("Failed to activate user {}", userId);
+            return ResponseEntity.badRequest().body("Failed to activate user");
+        } catch (Exception e) {
+            log.error("Error activating user {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body("An unexpected error occurred while activating the user");
+        }
+    }
+
+    /**
      * Updates system configuration settings
      * 
      * @param userId           ID of the admin making the change
