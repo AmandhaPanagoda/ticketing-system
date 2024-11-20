@@ -19,6 +19,7 @@ public class TransactionLogDTO { // TODO: SAVE IN DB
     private Transaction type;
     private LocalDateTime timestamp;
     private int userId;
+    private String username;
     private UserRole userRole;
     private int ticketId;
     private BigDecimal amount;
@@ -29,6 +30,7 @@ public class TransactionLogDTO { // TODO: SAVE IN DB
      * 
      * @param type     The type of transaction (PURCHASE, SALE, etc.)
      * @param userId   The ID of the user performing the transaction
+     * @param username The username of the user
      * @param userRole The role of the user (CUSTOMER, VENDOR)
      * @param ticketId The ID of the ticket involved
      * @param amount   The transaction amount
