@@ -66,25 +66,6 @@ public class AdminController {
     }
 
     /**
-     * Retrieves users filtered by role
-     * 
-     * @param role The role to filter users by
-     */
-    @GetMapping("/users/{role}")
-    public ResponseEntity<List<UserDTO>> getUsersByRole(@PathVariable String role) {
-        log.debug("Retrieving users with role: {}", role);
-        try {
-            return ResponseEntity.ok(adminService.getUsersByRole(role.toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid role requested: {}", role);
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e) {
-            log.error("Error retrieving users by role {}: {}", role, e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    /**
      * Deletes a user from the system
      * 
      * @param userId The ID of the user to delete
