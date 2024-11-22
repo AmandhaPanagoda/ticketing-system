@@ -1,4 +1,4 @@
-package com.westminster.ticketing_system.services.Customer;
+package com.westminster.ticketing_system.services.customer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

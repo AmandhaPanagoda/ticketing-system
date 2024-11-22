@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.dtos.TicketDTO;
-import com.westminster.ticketing_system.services.Customer.CustomerService;
+import com.westminster.ticketing_system.services.customer.CustomerService;
 
 import java.util.List;
 

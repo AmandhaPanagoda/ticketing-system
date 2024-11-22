@@ -1,4 +1,4 @@
-package com.westminster.ticketing_system.services.Customer;
+package com.westminster.ticketing_system.services.customer;
 
 import java.util.List;
 

@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import com.westminster.ticketing_system.core.threads.CustomerThread;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
+import com.westminster.ticketing_system.services.customer.CustomerService;
 import com.westminster.ticketing_system.core.pool.TicketPool;
-import com.westminster.ticketing_system.services.Customer.CustomerService;
 
 import lombok.extern.slf4j.Slf4j;
 
