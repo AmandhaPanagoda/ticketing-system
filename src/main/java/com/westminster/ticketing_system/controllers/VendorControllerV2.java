@@ -12,6 +12,7 @@ import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.core.threads.VendorThread;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.services.vendor.VendorService;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,12 @@ public class VendorControllerV2 {
     @Autowired
     private VendorService vendorService;
 
+    @Autowired
+    private SystemLogService logService;
+
+    private static final String SOURCE = "VendorControllerV2";
+    private static final String ORIGINATOR = "SYSTEM";
+
     /**
      * Asynchronously processes ticket addition requests from vendors
      * 
@@ -45,11 +52,13 @@ public class VendorControllerV2 {
     public ResponseEntity<?> addTicketsV2(
             @RequestHeader("Userid") int userId,
             @PathVariable int ticketCount) {
-        log.info("Received request to add {} tickets from vendor {}", ticketCount, userId);
+        logService.info(SOURCE, "Received request to add " + ticketCount + " tickets from vendor " + userId,
+                ORIGINATOR, "addTicketsV2");
 
         try {
             if (!threadManager.isSystemRunning()) {
-                log.warn("System not running - rejected request from vendor {}", userId);
+                logService.warn(SOURCE, "System not running - rejected request from vendor " + userId,
+                        ORIGINATOR, "addTicketsV2");
                 return ResponseEntity.badRequest().body("System is currently not running");
             }
 
@@ -57,18 +66,22 @@ public class VendorControllerV2 {
             threadManager.addVendorThread(vendorThread);
             vendorThread.start();
 
-            log.info("Successfully initiated ticket addition process for vendor {}", userId);
+            logService.info(SOURCE, "Successfully initiated ticket addition process for vendor " + userId,
+                    ORIGINATOR, "addTicketsV2");
             return ResponseEntity.accepted()
                     .body(String.format("Processing request to add %d tickets", ticketCount));
 
         } catch (IllegalStateException e) {
-            log.error("Invalid state for vendor {}: {}", userId, e.getMessage());
+            logService.error(SOURCE, "Invalid state for vendor " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "addTicketsV2");
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.error("Invalid arguments from vendor {}: {}", userId, e.getMessage());
+            logService.error(SOURCE, "Invalid arguments from vendor " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "addTicketsV2");
             return ResponseEntity.badRequest().body("Invalid request parameters");
         } catch (Exception e) {
-            log.error("Unexpected error processing vendor {} request: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Unexpected error processing vendor " + userId + " request: " + e.getMessage(),
+                    ORIGINATOR, "addTicketsV2");
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while processing your request");
         }
@@ -79,7 +92,7 @@ public class VendorControllerV2 {
      */
     @GetMapping("/pool/status")
     public ResponseEntity<?> getPoolStatus(@RequestHeader("Userid") int userId) {
-        log.debug("Pool status requested by vendor {}", userId);
+        logService.debug(SOURCE, "Pool status requested by vendor " + userId, ORIGINATOR, "getPoolStatus");
         try {
             return ResponseEntity.ok(Map.of(
                     "currentTicketCount", ticketPool.getCurrentTicketCount(),
@@ -87,7 +100,8 @@ public class VendorControllerV2 {
                     "isEmpty", ticketPool.isPoolEmpty(),
                     "isRunning", threadManager.isSystemRunning()));
         } catch (Exception e) {
-            log.error("Error retrieving pool status for vendor {}: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving pool status for vendor " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "getPoolStatus");
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve pool status");
         }
@@ -99,12 +113,15 @@ public class VendorControllerV2 {
     @GetMapping("/tickets")
     public ResponseEntity<?> getVendorTickets(@RequestHeader("Userid") int userId) {
         try {
-            log.info("Fetching ticket summaries for vendor with ID: {}", userId);
+            logService.info(SOURCE, "Fetching ticket summaries for vendor with ID: " + userId, ORIGINATOR,
+                    "getVendorTickets");
             List<TicketSummaryDTO> tickets = vendorService.getVendorTicketSummaries(userId);
-            log.info("Successfully retrieved {} ticket summaries for vendor ID: {}", tickets.size(), userId);
+            logService.info(SOURCE, "Successfully retrieved " + tickets.size() + " ticket summaries for vendor ID: "
+                    + userId, ORIGINATOR, "getVendorTickets");
             return ResponseEntity.ok(tickets);
         } catch (Exception e) {
-            log.error("Error fetching ticket summaries for vendor ID: {}", userId, e);
+            logService.error(SOURCE, "Error fetching ticket summaries for vendor ID: " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "getVendorTickets");
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while processing your request");
         }

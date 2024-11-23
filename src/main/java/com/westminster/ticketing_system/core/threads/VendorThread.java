@@ -1,10 +1,20 @@
 package com.westminster.ticketing_system.core.threads;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.westminster.ticketing_system.core.pool.TicketPool;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class VendorThread extends Thread {
+
+    @Autowired
+    private SystemLogService logService;
+
+    private static final String SOURCE = "VendorThread";
+    private static final String ORIGINATOR = "SYSTEM";
+
     private final TicketPool ticketPool;
     private final int vendorId;
     private final int ticketCount;
@@ -23,15 +33,17 @@ public class VendorThread extends Thread {
             try {
                 boolean success = ticketPool.addTickets(ticketCount, vendorId);
                 if (!success) {
-                    log.warn("Vendor {} failed to add tickets", vendorId);
+                    logService.warn(SOURCE, "Vendor " + vendorId + " failed to add tickets", ORIGINATOR,
+                            "addTickets");
                 }
                 break;
             } catch (InterruptedException e) {
-                log.info("Vendor {} thread interrupted", vendorId);
+                logService.info(SOURCE, "Vendor " + vendorId + " thread interrupted", ORIGINATOR, "addTickets");
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                log.error("Error in vendor thread {}: {}", vendorId, e.getMessage());
+                logService.error(SOURCE, "Error in vendor thread " + vendorId + ": " + e.getMessage(), ORIGINATOR,
+                        "addTickets");
                 break;
             }
         }
@@ -39,6 +51,7 @@ public class VendorThread extends Thread {
     }
 
     public void shutdown() {
+        logService.info(SOURCE, "Shutting down vendor thread", ORIGINATOR, "shutdown");
         running = false;
         interrupt();
     }

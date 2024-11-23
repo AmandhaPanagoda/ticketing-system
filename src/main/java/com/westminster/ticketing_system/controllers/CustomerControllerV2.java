@@ -12,6 +12,7 @@ import com.westminster.ticketing_system.core.threads.CustomerThread;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.dtos.TicketSummaryDTO;
 import com.westminster.ticketing_system.services.customer.CustomerService;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CustomerControllerV2 {
 
+    private static final String SOURCE = "CustomerControllerV2";
+    private static final String ORIGINATOR = "SYSTEM";
+
     @Autowired
     private ThreadManager threadManager;
 
@@ -33,6 +37,9 @@ public class CustomerControllerV2 {
 
     @Autowired
     private CustomerService customerService;
+
+    @Autowired
+    private SystemLogService logService;
 
     /**
      * Asynchronously processes ticket purchase requests from customers
@@ -45,11 +52,13 @@ public class CustomerControllerV2 {
     public ResponseEntity<?> removeTicketsV2(
             @RequestHeader("Userid") int userId,
             @PathVariable int ticketCount) {
-        log.info("Received request to purchase {} tickets from customer {}", ticketCount, userId);
+        logService.info(SOURCE, "Received request to purchase " + ticketCount + " tickets from customer " + userId,
+                ORIGINATOR, "removeTicketsV2");
 
         try {
             if (!threadManager.isSystemRunning()) {
-                log.warn("System not running - rejected request from customer {}", userId);
+                logService.warn(SOURCE, "System not running - rejected request from customer " + userId,
+                        ORIGINATOR, "removeTicketsV2");
                 return ResponseEntity.badRequest().body("System is currently not running");
             }
 
@@ -57,18 +66,22 @@ public class CustomerControllerV2 {
             threadManager.addCustomerThread(customerThread);
             customerThread.start();
 
-            log.info("Successfully initiated ticket purchase process for customer {}", userId);
+            logService.info(SOURCE, "Successfully initiated ticket purchase process for customer " + userId,
+                    ORIGINATOR, "removeTicketsV2");
             return ResponseEntity.accepted()
                     .body(String.format("Processing request to purchase %d tickets", ticketCount));
 
         } catch (IllegalStateException e) {
-            log.error("Invalid state for customer {}: {}", userId, e.getMessage());
+            logService.error(SOURCE, "Invalid state for customer " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "removeTicketsV2");
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.error("Invalid arguments from customer {}: {}", userId, e.getMessage());
+            logService.error(SOURCE, "Invalid arguments from customer " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "removeTicketsV2");
             return ResponseEntity.badRequest().body("Invalid request parameters");
         } catch (Exception e) {
-            log.error("Unexpected error processing customer {} request: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Unexpected error processing customer " + userId + " request: " + e.getMessage(),
+                    ORIGINATOR, "removeTicketsV2");
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while processing your request");
         }
@@ -79,7 +92,7 @@ public class CustomerControllerV2 {
      */
     @GetMapping("/pool/status")
     public ResponseEntity<?> getPoolStatus(@RequestHeader("Userid") int userId) {
-        log.debug("Pool status requested by customer {}", userId);
+        logService.debug(SOURCE, "Pool status requested by customer " + userId, ORIGINATOR, "getPoolStatus");
         try {
             return ResponseEntity.ok(Map.of(
                     "currentTicketCount", ticketPool.getCurrentTicketCount(),
@@ -87,7 +100,8 @@ public class CustomerControllerV2 {
                     "isEmpty", ticketPool.isPoolEmpty(),
                     "isRunning", ticketPool.isRunning()));
         } catch (Exception e) {
-            log.error("Error retrieving pool status for customer {}: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving pool status for customer " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "getPoolStatus");
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve pool status");
         }
@@ -99,12 +113,15 @@ public class CustomerControllerV2 {
     @GetMapping("/tickets")
     public ResponseEntity<?> getCustomerTickets(@RequestHeader("Userid") int userId) {
         try {
-            log.info("Fetching tickets for customer with ID: {}", userId);
+            logService.info(SOURCE, "Fetching tickets for customer with ID: " + userId, ORIGINATOR,
+                    "getCustomerTickets");
             List<TicketSummaryDTO> tickets = customerService.getCustomerTicketSummaries(userId);
-            log.info("Successfully retrieved {} tickets for customer ID: {}", tickets.size(), userId);
+            logService.info(SOURCE, "Successfully retrieved " + tickets.size() + " tickets for customer ID: " + userId,
+                    ORIGINATOR, "getCustomerTickets");
             return ResponseEntity.ok(tickets);
         } catch (Exception e) {
-            log.error("Error fetching tickets for customer ID: {}", userId, e);
+            logService.error(SOURCE, "Error fetching tickets for customer ID: " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "getCustomerTickets");
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while processing your request");
         }
