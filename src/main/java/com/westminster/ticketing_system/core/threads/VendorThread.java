@@ -6,6 +6,11 @@ import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Thread implementation for ticket vendors.
+ * Handles the process of adding tickets to the central ticket pool.
+ * Each vendor operates independently and can add a specified number of tickets.
+ */
 @Slf4j
 public class VendorThread extends Thread {
 
@@ -20,6 +25,13 @@ public class VendorThread extends Thread {
     private final int ticketCount;
     private volatile boolean running = true;
 
+    /**
+     * Creates a new vendor thread.
+     * 
+     * @param ticketPool  The shared ticket pool
+     * @param vendorId    Unique identifier for the vendor
+     * @param ticketCount Number of tickets to add
+     */
     public VendorThread(TicketPool ticketPool, int vendorId, int ticketCount) {
         this.ticketPool = ticketPool;
         this.vendorId = vendorId;
@@ -27,6 +39,10 @@ public class VendorThread extends Thread {
         setName("Vendor-" + vendorId);
     }
 
+    /**
+     * Main execution loop for the vendor thread.
+     * Attempts to add tickets to the pool until successful or interrupted.
+     */
     @Override
     public void run() {
         while (running) {
@@ -50,6 +66,10 @@ public class VendorThread extends Thread {
         running = false;
     }
 
+    /**
+     * Safely stops the vendor thread
+     * Sets running flag to false and interrupts the thread.
+     */
     public void shutdown() {
         logService.info(SOURCE, "Shutting down vendor thread", ORIGINATOR, "shutdown");
         running = false;
