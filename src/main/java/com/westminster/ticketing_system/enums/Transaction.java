@@ -4,5 +4,6 @@ public enum Transaction {
     PURCHASE,
     SALE,
     CANCEL,
-    PENDING
+    PENDING,
+    FAILED
 }
