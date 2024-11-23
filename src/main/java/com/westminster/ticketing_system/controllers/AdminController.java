@@ -14,6 +14,7 @@ import com.westminster.ticketing_system.dtos.SystemConfigurationDTO;
 import com.westminster.ticketing_system.services.admin.AdminService;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,6 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdminController {
 
+    private static final String SOURCE = "AdminController";
+    private static final String ORIGINATOR = "SYSTEM";
+
     @Autowired
     private AdminService adminService;
 
@@ -37,16 +41,19 @@ public class AdminController {
     @Autowired
     private TicketPool ticketPool;
 
+    @Autowired
+    private SystemLogService logService;
+
     /**
      * Retrieves all tickets in the system
      */
     @GetMapping("/tickets")
     public ResponseEntity<List<TicketDTO>> getAllTickets() {
-        log.debug("Retrieving all tickets");
+        logService.info(SOURCE, "Retrieving all tickets", ORIGINATOR, "getAllTickets");
         try {
             return ResponseEntity.ok(adminService.getAllTickets());
         } catch (Exception e) {
-            log.error("Error retrieving tickets: {}", e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving tickets: " + e.getMessage(), ORIGINATOR, "getAllTickets");
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -56,11 +63,11 @@ public class AdminController {
      */
     @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
-        log.debug("Retrieving all users");
+        logService.info(SOURCE, "Retrieving all users", ORIGINATOR, "getAllUsers");
         try {
             return ResponseEntity.ok(adminService.getAllUsers());
         } catch (Exception e) {
-            log.error("Error retrieving users: {}", e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving users: " + e.getMessage(), ORIGINATOR, "getAllUsers");
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -72,17 +79,17 @@ public class AdminController {
      */
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable int userId) {
-        log.info("Attempting to delete user with ID: {}", userId);
+        logService.info(SOURCE, "Attempting to delete user with ID: " + userId, ORIGINATOR, "deleteUser");
         try {
             boolean isDeleted = adminService.deleteUser(userId);
             if (isDeleted) {
-                log.info("Successfully deleted user {}", userId);
+                logService.info(SOURCE, "Successfully deleted user " + userId, ORIGINATOR, "deleteUser");
                 return ResponseEntity.ok("User deleted successfully");
             }
-            log.warn("Failed to delete user {}", userId);
+            logService.warn(SOURCE, "Failed to delete user " + userId, ORIGINATOR, "deleteUser");
             return ResponseEntity.badRequest().body("Failed to delete user");
         } catch (Exception e) {
-            log.error("Error deleting user {}: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Error deleting user " + userId + ": " + e.getMessage(), ORIGINATOR, "deleteUser");
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while deleting the user");
         }
@@ -95,17 +102,18 @@ public class AdminController {
      */
     @PutMapping("/users/{userId}/activate")
     public ResponseEntity<?> activateUser(@PathVariable int userId) {
-        log.info("Attempting to activate user with ID: {}", userId);
+        logService.info(SOURCE, "Attempting to activate user with ID: " + userId, ORIGINATOR, "activateUser");
         try {
             boolean isActivated = adminService.activateUser(userId);
             if (isActivated) {
-                log.info("Successfully activated user {}", userId);
+                logService.info(SOURCE, "Successfully activated user " + userId, ORIGINATOR, "activateUser");
                 return ResponseEntity.ok("User activated successfully");
             }
-            log.warn("Failed to activate user {}", userId);
+            logService.warn(SOURCE, "Failed to activate user " + userId, ORIGINATOR, "activateUser");
             return ResponseEntity.badRequest().body("Failed to activate user");
         } catch (Exception e) {
-            log.error("Error activating user {}: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Error activating user " + userId + ": " + e.getMessage(), ORIGINATOR,
+                    "activateUser");
             return ResponseEntity.internalServerError()
                     .body("An unexpected error occurred while activating the user");
         }
@@ -121,18 +129,22 @@ public class AdminController {
     public ResponseEntity<?> updateSystemConfiguration(
             @RequestHeader("Userid") int userId,
             @RequestBody SystemConfigurationDTO configurationDTO) {
-        log.info("Admin {} attempting to update system configuration", userId);
+        logService.info(SOURCE, "Admin " + userId + " attempting to update system configuration", ORIGINATOR,
+                "updateSystemConfiguration");
         try {
             boolean success = adminService.updateSystemConfiguration(userId, configurationDTO);
             if (success) {
-                log.info("System configuration successfully updated by admin {}", userId);
+                logService.info(SOURCE, "System configuration successfully updated by admin " + userId, ORIGINATOR,
+                        "updateSystemConfiguration");
                 return ResponseEntity.ok(Map.of("message", "System configuration updated successfully"));
             }
-            log.warn("Failed to update system configuration by admin {}", userId);
+            logService.warn(SOURCE, "Failed to update system configuration by admin " + userId, ORIGINATOR,
+                    "updateSystemConfiguration");
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Failed to update system configuration"));
         } catch (Exception e) {
-            log.error("Error updating system configuration by admin {}: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Error updating system configuration by admin " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "updateSystemConfiguration");
             return ResponseEntity.internalServerError()
                     .body(Map.of("message", "An unexpected error occurred while updating configuration"));
         }
@@ -143,12 +155,13 @@ public class AdminController {
      */
     @GetMapping("/system-configuration")
     public ResponseEntity<SystemConfigurationDTO> getSystemConfiguration() {
-        log.debug("Retrieving system configuration");
+        logService.info(SOURCE, "Retrieving system configuration", ORIGINATOR, "getSystemConfiguration");
         try {
             SystemConfigurationDTO config = adminService.getSystemConfiguration();
             return ResponseEntity.ok(config);
         } catch (Exception e) {
-            log.error("Error retrieving system configuration: {}", e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving system configuration: " + e.getMessage(), ORIGINATOR,
+                    "getSystemConfiguration");
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -160,19 +173,21 @@ public class AdminController {
      */
     @PostMapping("/system")
     public ResponseEntity<?> controlSystem(@RequestBody boolean start) {
-        log.info("Attempting to {} system", start ? "start" : "stop");
+        logService.info(SOURCE, "Attempting to " + (start ? "start" : "stop") + " system", ORIGINATOR,
+                "controlSystem");
         try {
             if (start) {
                 threadManager.startSystem();
-                log.info("System started successfully");
+                logService.info(SOURCE, "System started successfully", ORIGINATOR, "controlSystem");
                 return ResponseEntity.ok("System started successfully");
             } else {
                 threadManager.stopSystem();
-                log.info("System stopped successfully");
+                logService.info(SOURCE, "System stopped successfully", ORIGINATOR, "controlSystem");
                 return ResponseEntity.ok("System stopped successfully");
             }
         } catch (Exception e) {
-            log.error("Failed to {} system: {}", start ? "start" : "stop", e.getMessage(), e);
+            logService.error(SOURCE, "Failed to " + (start ? "start" : "stop") + " system: " + e.getMessage(),
+                    ORIGINATOR, "controlSystem");
             return ResponseEntity.internalServerError()
                     .body("Failed to " + (start ? "start" : "stop") + " system: " + e.getMessage());
         }
@@ -183,11 +198,12 @@ public class AdminController {
      */
     @GetMapping("/system/status")
     public ResponseEntity<?> getSystemStatus() {
-        log.debug("Retrieving system status");
+        logService.info(SOURCE, "Retrieving system status", ORIGINATOR, "getSystemStatus");
         try {
             return ResponseEntity.ok(Map.of("running", threadManager.isSystemRunning()));
         } catch (Exception e) {
-            log.error("Error retrieving system status: {}", e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving system status: " + e.getMessage(), ORIGINATOR,
+                    "getSystemStatus");
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve system status");
         }
@@ -198,7 +214,8 @@ public class AdminController {
      */
     @GetMapping("/pool/status")
     public ResponseEntity<?> getPoolStatus(@RequestHeader("Userid") int userId) {
-        log.debug("Pool status requested by admin {}", userId);
+        logService.info(SOURCE, "Pool status requested by admin " + userId, ORIGINATOR, "getPoolStatus");
+
         try {
             return ResponseEntity.ok(Map.of(
                     "currentTicketCount", ticketPool.getCurrentTicketCount(),
@@ -206,7 +223,8 @@ public class AdminController {
                     "isEmpty", ticketPool.isPoolEmpty(),
                     "isRunning", threadManager.isSystemRunning()));
         } catch (Exception e) {
-            log.error("Error retrieving pool status for admin {}: {}", userId, e.getMessage(), e);
+            logService.error(SOURCE, "Error retrieving pool status for admin " + userId + ": " + e.getMessage(),
+                    ORIGINATOR, "getPoolStatus");
             return ResponseEntity.internalServerError()
                     .body("Failed to retrieve pool status");
         }
