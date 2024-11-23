@@ -1,6 +1,7 @@
 package com.westminster.ticketing_system.core.pool;
 
 import com.westminster.ticketing_system.entity.Ticket;
+import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.enums.Transaction;
 import com.westminster.ticketing_system.enums.UserRole;
 import com.westminster.ticketing_system.repository.TicketRepository;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 
 /**
  * Implementation of the TicketPool interface that manages concurrent ticket
@@ -32,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class TicketPoolImplementation implements TicketPool {
+    private static final String SOURCE = "TicketPoolImplementation";
+    private static final String ORIGINATOR = "SYSTEM";
+
     private final AdminService adminService;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
@@ -40,6 +46,7 @@ public class TicketPoolImplementation implements TicketPool {
     private final Object lock = new Object();
     private volatile boolean isRunning;
     private final TransactionLogService transactionLogService;
+    private final SystemLogService logService;
 
     // Semaphore to track how many tickets are available for purchase
     // Starts at 0 and increases when tickets are added, decreases when purchased
@@ -52,30 +59,28 @@ public class TicketPoolImplementation implements TicketPool {
     private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public TicketPoolImplementation(AdminService adminService, TicketRepository ticketRepository,
-            UserRepository userRepository, TransactionLogService transactionLogService) {
+    public TicketPoolImplementation(
+            AdminService adminService,
+            TicketRepository ticketRepository,
+            UserRepository userRepository,
+            TransactionLogService transactionLogService,
+            SystemLogService logService) {
+
         this.adminService = adminService;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.transactionLogService = transactionLogService;
+        this.logService = logService;
         this.isRunning = true;
 
-        // Determine maxPoolSize before using it
-        int poolSize = 500; // Default value
-        try {
-            SystemConfigurationDTO config = adminService.getSystemConfiguration();
-            if (config != null) {
-                poolSize = config.getMaxTicketCapacity();
-                log.info("Loaded maxPoolSize from config: {}", poolSize);
-            }
-        } catch (Exception e) {
-            log.warn("Could not load system configuration. Using default maxPoolSize: {}", poolSize);
-        }
-
-        this.maxPoolSize = poolSize;
+        SystemConfigurationDTO config = adminService.getSystemConfiguration();
+        this.maxPoolSize = config.getMaxTicketCapacity();
         this.ticketQueue = new ConcurrentLinkedQueue<>();
         this.availableTickets = new Semaphore(0, true);
         this.capacityControl = new Semaphore(maxPoolSize, true);
+
+        logService.info(SOURCE, "Initialized ticket pool with max capacity: " + maxPoolSize, ORIGINATOR,
+                "TicketPoolImplementation");
     }
 
     /**
@@ -91,7 +96,8 @@ public class TicketPoolImplementation implements TicketPool {
     public boolean addTickets(int ticketCount, int vendorId) throws InterruptedException {
         notifyPoolStatusChange(); // Notify clients of the current pool status
         if (!isRunning) {
-            log.warn("Ticket pool is not running - rejecting tickets from vendor {}", vendorId);
+            logService.warn(SOURCE, "Ticket pool is not running - rejecting tickets from vendor " + vendorId,
+                    ORIGINATOR, "addTickets");
             return false;
         }
 
@@ -100,27 +106,28 @@ public class TicketPoolImplementation implements TicketPool {
             int availableCapacity = maxPoolSize - currentCount;
 
             if (availableCapacity <= 0) {
-                log.warn("Pool is at capacity ({}) - rejecting tickets from vendor {}",
-                        maxPoolSize, vendorId);
+                logService.warn(SOURCE, "Pool is at capacity (" + maxPoolSize + ") - rejecting tickets from vendor "
+                        + vendorId, ORIGINATOR, "addTickets");
                 return false;
             }
 
-            int adjustedTicketCount = Math.min(ticketCount, availableCapacity);
-            if (adjustedTicketCount < ticketCount) {
-                log.info("Adjusting request from {} tickets to {} due to capacity constraints",
-                        ticketCount, adjustedTicketCount);
+            if (availableCapacity < ticketCount) {
+                logService.warn(SOURCE, "Pool does not have enough space for " + ticketCount
+                        + " tickets - rejecting tickets from vendor " + vendorId, ORIGINATOR, "addTickets");
+                return false;
             }
 
             SystemConfigurationDTO config = adminService.getSystemConfiguration();
-            long releaseRate = config.getTicketReleaseRate();
-            List<Ticket> tickets = generateTicketBatch(adjustedTicketCount, vendorId);
+            int releaseRate = config.getTicketReleaseRate();
+            List<Ticket> tickets = generateTicketBatch(ticketCount, vendorId);
 
             for (Ticket ticket : tickets) {
                 Thread.sleep(releaseRate); // Rate limiting: Controls how fast tickets can be added
 
                 if (!capacityControl.tryAcquire(5, TimeUnit.SECONDS)) { // Timeout: Maximum time to wait for space to
                                                                         // become available
-                    log.error("Capacity control timeout for vendor {}", vendorId);
+                    logService.error(SOURCE, "Capacity control timeout for vendor " + vendorId, ORIGINATOR,
+                            "addTickets");
                     return false;
                 }
 
@@ -136,27 +143,30 @@ public class TicketPoolImplementation implements TicketPool {
                                 savedTicket.getId(), savedTicket.getPrice());
                         transactionLogService.addTransaction(transactionLog);
 
-                        log.debug("Added ticket {} to pool - current size: {}",
-                                savedTicket.getId(), ticketQueue.size());
+                        logService.debug(SOURCE, "Added ticket " + savedTicket.getId()
+                                + " to pool - current size: " + ticketQueue.size(), ORIGINATOR,
+                                "addTickets");
                     }
                 } catch (Exception e) {
-                    log.error("Failed to save ticket for vendor {}: {}",
-                            vendorId, e.getMessage(), e);
+                    logService.error(SOURCE, "Failed to save ticket for vendor " + vendorId + ": "
+                            + e.getMessage(), ORIGINATOR, "addTickets");
                     capacityControl.release(); // If saving fails, release the capacity we acquired
                     throw e;
                 }
             }
-            log.info("Successfully added {} tickets from vendor {}", adjustedTicketCount, vendorId);
+            logService.info(SOURCE, "Successfully added " + ticketCount + " tickets from vendor "
+                    + vendorId, ORIGINATOR, "addTickets");
             notifyPoolStatusChange();
             return true;
 
         } catch (InterruptedException e) {
-            log.error("Ticket addition interrupted for vendor {}", vendorId);
+            logService.error(SOURCE, "Ticket addition interrupted for vendor " + vendorId, ORIGINATOR,
+                    "addTickets");
             Thread.currentThread().interrupt();
             throw e;
         } catch (Exception e) {
-            log.error("Unexpected error adding tickets for vendor {}: {}",
-                    vendorId, e.getMessage(), e);
+            logService.error(SOURCE, "Unexpected error adding tickets for vendor " + vendorId + ": "
+                    + e.getMessage(), ORIGINATOR, "addTickets");
             throw e;
         }
     }
@@ -174,7 +184,8 @@ public class TicketPoolImplementation implements TicketPool {
     public boolean purchaseTickets(int count, int customerId) throws InterruptedException {
         notifyPoolStatusChange(); // Notify clients of the current pool status
         if (!isRunning) {
-            log.warn("Ticket pool is not running - rejecting purchase from customer {}", customerId);
+            logService.warn(SOURCE, "Ticket pool is not running - rejecting purchase from customer "
+                    + customerId, ORIGINATOR, "purchaseTickets");
             return false;
         }
 
@@ -187,7 +198,8 @@ public class TicketPoolImplementation implements TicketPool {
                 Thread.sleep(retrievalRate);
 
                 if (!availableTickets.tryAcquire(5, TimeUnit.SECONDS)) {
-                    log.warn("No tickets available for customer {} after timeout", customerId);
+                    logService.warn(SOURCE, "No tickets available for customer " + customerId
+                            + " after timeout", ORIGINATOR, "purchaseTickets");
                     return false;
                 }
 
@@ -206,30 +218,34 @@ public class TicketPoolImplementation implements TicketPool {
                                     ticket.getId(), ticket.getPrice());
                             transactionLogService.addTransaction(transactionLog);
 
-                            log.debug("Customer {} purchased ticket {} - pool size: {}",
-                                    customerId, ticket.getId(), ticketQueue.size());
+                            logService.debug(SOURCE, "Customer " + customerId
+                                    + " purchased ticket " + ticket.getId()
+                                    + " - pool size: " + ticketQueue.size(), ORIGINATOR,
+                                    "purchaseTickets");
                         }
                     }
                 } catch (Exception e) {
-                    log.error("Error processing purchase for customer {}: {}",
-                            customerId, e.getMessage(), e);
+                    logService.error(SOURCE, "Error processing purchase for customer " + customerId + ": "
+                            + e.getMessage(), ORIGINATOR, "purchaseTickets");
                     availableTickets.release(); // If purchase fails, release the ticket we acquired
                     throw e;
                 }
             }
 
             ticketRepository.saveAll(purchasedTickets);
-            log.info("Customer {} successfully purchased {} tickets", customerId, count);
+            logService.info(SOURCE, "Customer " + customerId + " successfully purchased " + count
+                    + " tickets", ORIGINATOR, "purchaseTickets");
             notifyPoolStatusChange();
             return true;
 
         } catch (InterruptedException e) {
-            log.error("Purchase interrupted for customer {}", customerId);
+            logService.error(SOURCE, "Purchase interrupted for customer " + customerId, ORIGINATOR,
+                    "purchaseTickets");
             Thread.currentThread().interrupt();
             throw e;
         } catch (Exception e) {
-            log.error("Unexpected error during purchase for customer {}: {}",
-                    customerId, e.getMessage(), e);
+            logService.error(SOURCE, "Unexpected error during purchase for customer " + customerId + ": "
+                    + e.getMessage(), ORIGINATOR, "purchaseTickets");
             throw e;
         }
     }
@@ -241,9 +257,11 @@ public class TicketPoolImplementation implements TicketPool {
      */
     @Override
     public void shutdown() {
-        log.info("Initiating ticket pool shutdown");
+        logService.info(SOURCE, "Initiating ticket pool shutdown", ORIGINATOR,
+                "shutdown");
         isRunning = false;
-        log.info("Ticket pool has been shut down. No new transactions will be accepted");
+        logService.info(SOURCE, "Ticket pool has been shut down. No new transactions will be accepted",
+                ORIGINATOR, "shutdown");
     }
 
     /**
@@ -255,7 +273,8 @@ public class TicketPoolImplementation implements TicketPool {
     @Override
     public int getCurrentTicketCount() {
         int count = ticketQueue.size();
-        log.debug("Current ticket count in pool: {}", count);
+        logService.debug(SOURCE, "Current ticket count in pool: " + count, ORIGINATOR,
+                "getCurrentTicketCount");
         return count;
     }
 
@@ -271,8 +290,9 @@ public class TicketPoolImplementation implements TicketPool {
         SystemConfigurationDTO config = adminService.getSystemConfiguration();
         int maxCapacity = config.getMaxTicketCapacity();
         boolean isFull = ticketQueue.size() >= maxCapacity;
-        log.debug("Pool capacity check - Current size: {}, Max capacity: {}, Is full: {}",
-                ticketQueue.size(), maxCapacity, isFull);
+        logService.debug(SOURCE, "Pool capacity check - Current size: " + ticketQueue.size()
+                + ", Max capacity: " + maxCapacity + ", Is full: " + isFull, ORIGINATOR,
+                "isPoolFull");
         return isFull;
     }
 
@@ -284,7 +304,8 @@ public class TicketPoolImplementation implements TicketPool {
     @Override
     public boolean isPoolEmpty() {
         boolean isEmpty = ticketQueue.isEmpty();
-        log.debug("Pool empty check - Is empty: {}", isEmpty);
+        logService.debug(SOURCE, "Pool empty check - Is empty: " + isEmpty, ORIGINATOR,
+                "isPoolEmpty");
         return isEmpty;
     }
 
@@ -295,7 +316,8 @@ public class TicketPoolImplementation implements TicketPool {
      */
     @Override
     public boolean isRunning() {
-        log.trace("Pool status check - Is running: {}", isRunning);
+        logService.debug(SOURCE, "Pool status check - Is running: " + isRunning, ORIGINATOR,
+                "isRunning");
         return isRunning;
     }
 
@@ -309,12 +331,22 @@ public class TicketPoolImplementation implements TicketPool {
      * @throws IllegalStateException    if ticket generation fails
      */
     private List<Ticket> generateTicketBatch(int ticketCount, int vendorId) {
-        log.info("Generating batch of {} tickets for vendor {}", ticketCount, vendorId);
+        logService.info(SOURCE, "Generating batch of " + ticketCount + " tickets for vendor " + vendorId,
+                ORIGINATOR, "generateTicketBatch");
         List<Ticket> tickets = new ArrayList<>();
 
         try {
-            var vendor = userRepository.findById(vendorId)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid vendor ID: " + vendorId));
+            logService.debug(SOURCE, "Looking up vendor with ID: " + vendorId, ORIGINATOR, "generateTicketBatch");
+
+            Optional<User> optionalVendor = userRepository.findById(vendorId);
+            if (!optionalVendor.isPresent()) {
+                logService.error(SOURCE, "Vendor not found with ID: " + vendorId, ORIGINATOR, "generateTicketBatch");
+                throw new IllegalArgumentException("Invalid vendor ID: " + vendorId);
+            }
+
+            User vendor = optionalVendor.get();
+            logService.debug(SOURCE, "Successfully found vendor: " + vendor.getUsername(), ORIGINATOR,
+                    "generateTicketBatch");
 
             for (int i = 0; i < ticketCount; i++) {
                 Ticket ticket = new Ticket();
@@ -329,16 +361,22 @@ public class TicketPoolImplementation implements TicketPool {
 
                 tickets.add(ticket);
 
-                log.debug("Generated ticket - ID: {}, Title: {}, Price: ${}, VendorId: {}",
-                        ticket.getId(), ticket.getTitle(), ticket.getPrice(), vendorId);
+                logService.debug(SOURCE, "Generated ticket - ID: " + ticket.getId()
+                        + ", Title: " + ticket.getTitle()
+                        + ", Price: $" + ticket.getPrice()
+                        + ", VendorId: " + vendorId, ORIGINATOR,
+                        "generateTicketBatch");
             }
 
-            log.info("Successfully generated {} tickets for vendor {}", ticketCount, vendorId);
+            logService.info(SOURCE, "Successfully generated " + ticketCount
+                    + " tickets for vendor " + vendorId, ORIGINATOR,
+                    "generateTicketBatch");
             return tickets;
 
         } catch (Exception e) {
-            log.error("Failed to generate ticket batch - Vendor: {}, Count: {}, Error: {}",
-                    vendorId, ticketCount, e.getMessage(), e);
+            logService.error(SOURCE, "Failed to generate ticket batch - Vendor: " + vendorId
+                    + ", Count: " + ticketCount + ", Error: " + e.getMessage(), ORIGINATOR,
+                    "generateTicketBatch");
             throw new IllegalStateException("Failed to generate tickets", e);
         }
     }
@@ -363,11 +401,13 @@ public class TicketPoolImplementation implements TicketPool {
                     "availableSpace", getAvailableSpace(),
                     "isRunning", isRunning());
 
-            log.debug("Broadcasting pool status update - Status: {}", status);
+            logService.debug(SOURCE, "Broadcasting pool status update - Status: " + status, ORIGINATOR,
+                    "notifyPoolStatusChange");
             messagingTemplate.convertAndSend("/topic/pool-status", status);
 
         } catch (Exception e) {
-            log.error("Failed to broadcast pool status update: {}", e.getMessage(), e);
+            logService.error(SOURCE, "Failed to broadcast pool status update: " + e.getMessage(), ORIGINATOR,
+                    "notifyPoolStatusChange");
             throw new RuntimeException("Failed to notify pool status change", e);
         }
     }

@@ -14,6 +14,7 @@ import com.westminster.ticketing_system.dtos.*;
 import com.westminster.ticketing_system.services.authentication.AuthService;
 import com.westminster.ticketing_system.services.jwt.UserDetailServiceImplementation;
 import com.westminster.ticketing_system.util.JwtUtil;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -29,140 +30,163 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AuthenticationController {
 
-    public static final String TOKEN_PREFIX = "Bearer ";
-    public static final String HEADER_STRING = "Authorization";
+        public static final String TOKEN_PREFIX = "Bearer ";
+        public static final String HEADER_STRING = "Authorization";
+        private static final String SOURCE = "AuthenticationController";
+        private static final String ORIGINATOR = "SYSTEM";
 
-    @Autowired
-    private AuthService authService;
+        @Autowired
+        private AuthService authService;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+        @Autowired
+        private AuthenticationManager authenticationManager;
 
-    @Autowired
-    private UserDetailServiceImplementation userDetailServiceImplementation;
+        @Autowired
+        private UserDetailServiceImplementation userDetailServiceImplementation;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+        @Autowired
+        private JwtUtil jwtUtil;
 
-    /**
-     * Handles customer registration
-     * 
-     * @param signupDTO Registration details for the customer
-     * @return ResponseEntity containing the created user details or error message
-     */
-    @PostMapping("/signup")
-    public ResponseEntity<?> signupCustomer(@RequestBody SignupDTO signupDTO) {
-        log.info("Processing customer signup request for email: {}", signupDTO.getEmail());
-        try {
-            if (authService.existsByEmail(signupDTO.getEmail())) {
-                log.warn("Signup failed - Email already exists: {}", signupDTO.getEmail());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
-            }
+        @Autowired
+        private SystemLogService logService;
 
-            if (authService.existsByUsername(signupDTO.getUsername())) {
-                log.warn("Signup failed - Username already exists: {}", signupDTO.getUsername());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
-            }
+        /**
+         * Handles customer registration
+         * 
+         * @param signupDTO Registration details for the customer
+         * @return ResponseEntity containing the created user details or error message
+         */
+        @PostMapping("/signup")
+        public ResponseEntity<?> signupCustomer(@RequestBody SignupDTO signupDTO) {
+                logService.info(SOURCE, "Processing customer signup request for email: " + signupDTO.getEmail(),
+                                ORIGINATOR, "signupCustomer");
+                try {
+                        if (authService.existsByEmail(signupDTO.getEmail())) {
+                                logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
+                                                ORIGINATOR, "signupCustomer");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+                        }
 
-            UserDTO createdUser = authService.signupCustomer(signupDTO);
-            log.info("Successfully created customer account for: {}", signupDTO.getEmail());
-            return ResponseEntity.ok(createdUser);
-        } catch (Exception e) {
-            log.error("Error during customer signup: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError()
-                    .body("An unexpected error occurred during registration");
+                        if (authService.existsByUsername(signupDTO.getUsername())) {
+                                logService.warn(SOURCE,
+                                                "Signup failed - Username already exists: " + signupDTO.getUsername(),
+                                                ORIGINATOR, "signupCustomer");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+                        }
+
+                        UserDTO createdUser = authService.signupCustomer(signupDTO);
+                        logService.info(SOURCE, "Successfully created customer account for: " + signupDTO.getEmail(),
+                                        ORIGINATOR, "signupCustomer");
+                        return ResponseEntity.ok(createdUser);
+                } catch (Exception e) {
+                        logService.error(SOURCE, "Error during customer signup: " + e.getMessage(), ORIGINATOR,
+                                        "signupCustomer");
+                        return ResponseEntity.internalServerError()
+                                        .body("An unexpected error occurred during registration");
+                }
         }
-    }
 
-    /**
-     * Handles vendor registration
-     * 
-     * @param signupDTO Registration details for the vendor
-     * @return ResponseEntity containing the created user details or error message
-     */
-    @PostMapping("/vendor/signup")
-    public ResponseEntity<?> signupVendor(@RequestBody SignupDTO signupDTO) {
-        log.info("Processing vendor signup request for email: {}", signupDTO.getEmail());
-        try {
-            if (authService.existsByEmail(signupDTO.getEmail())) {
-                log.warn("Signup failed - Email already exists: {}", signupDTO.getEmail());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
-            }
+        /**
+         * Handles vendor registration
+         * 
+         * @param signupDTO Registration details for the vendor
+         * @return ResponseEntity containing the created user details or error message
+         */
+        @PostMapping("/vendor/signup")
+        public ResponseEntity<?> signupVendor(@RequestBody SignupDTO signupDTO) {
+                logService.info(SOURCE, "Processing vendor signup request for email: " + signupDTO.getEmail(),
+                                ORIGINATOR, "signupVendor");
+                try {
+                        if (authService.existsByEmail(signupDTO.getEmail())) {
+                                logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
+                                                ORIGINATOR, "signupVendor");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+                        }
 
-            if (authService.existsByUsername(signupDTO.getUsername())) {
-                log.warn("Signup failed - Username already exists: {}", signupDTO.getUsername());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
-            }
+                        if (authService.existsByUsername(signupDTO.getUsername())) {
+                                logService.warn(SOURCE,
+                                                "Signup failed - Username already exists: " + signupDTO.getUsername(),
+                                                ORIGINATOR, "signupVendor");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+                        }
 
-            UserDTO createdUser = authService.signupVendor(signupDTO);
-            log.info("Successfully created vendor account for: {}", signupDTO.getEmail());
-            return ResponseEntity.ok(createdUser);
-        } catch (Exception e) {
-            log.error("Error during vendor signup: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError()
-                    .body("An unexpected error occurred during registration");
+                        UserDTO createdUser = authService.signupVendor(signupDTO);
+                        logService.info(SOURCE, "Successfully created vendor account for: " + signupDTO.getEmail(),
+                                        ORIGINATOR, "signupVendor");
+                        return ResponseEntity.ok(createdUser);
+                } catch (Exception e) {
+                        logService.error(SOURCE, "Error during vendor signup: " + e.getMessage(), ORIGINATOR,
+                                        "signupVendor");
+                        return ResponseEntity.internalServerError()
+                                        .body("An unexpected error occurred during registration");
+                }
         }
-    }
 
-    /**
-     * Authenticates user and generates JWT token
-     * 
-     * @param authenticationRequest Contains login credentials
-     * @param response              HTTP response to add headers
-     * @return ResponseEntity containing JWT token and user details
-     */
-    @PostMapping("/authenticate")
-    public ResponseEntity<?> createAuthenticationToken(
-            @RequestBody AuthenticationRequest authenticationRequest,
-            HttpServletResponse response) {
-        log.info("Processing authentication request for user: {}", authenticationRequest.getUsername());
+        /**
+         * Authenticates user and generates JWT token
+         * 
+         * @param authenticationRequest Contains login credentials
+         * @param response              HTTP response to add headers
+         * @return ResponseEntity containing JWT token and user details
+         */
+        @PostMapping("/authenticate")
+        public ResponseEntity<?> createAuthenticationToken(
+                        @RequestBody AuthenticationRequest authenticationRequest,
+                        HttpServletResponse response) {
+                logService.info(SOURCE,
+                                "Processing authentication request for user: " + authenticationRequest.getUsername(),
+                                ORIGINATOR, "createAuthenticationToken");
 
-        try {
-            // Check if user is deleted
-            UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
-            if (user.getIsDeleted()) {
-                log.warn("Authentication failed for user {}: Account deactivated",
-                        authenticationRequest.getUsername());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("Account has been deactivated. Please contact support.");
-            }
+                try {
+                        // Check if user is deleted
+                        UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
+                        if (user.getIsDeleted()) {
+                                logService.warn(SOURCE,
+                                                "Authentication failed for user " + authenticationRequest.getUsername()
+                                                                + ": Account deactivated",
+                                                ORIGINATOR, "createAuthenticationToken");
+                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                                .body("Account has been deactivated. Please contact support.");
+                        }
 
-            // Authenticate user
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authenticationRequest.getUsername(),
-                            authenticationRequest.getPassword()));
+                        // Authenticate user
+                        authenticationManager.authenticate(
+                                        new UsernamePasswordAuthenticationToken(
+                                                        authenticationRequest.getUsername(),
+                                                        authenticationRequest.getPassword()));
 
-            // Generate token
-            final UserDetails userDetails = userDetailServiceImplementation
-                    .loadUserByUsername(authenticationRequest.getUsername());
-            final String jwt = jwtUtil.generateToken(userDetails.getUsername());
+                        // Generate token
+                        final UserDetails userDetails = userDetailServiceImplementation
+                                        .loadUserByUsername(authenticationRequest.getUsername());
+                        final String jwt = jwtUtil.generateToken(userDetails.getUsername());
 
-            // Prepare response
-            JSONObject responseBody = new JSONObject()
-                    .put("userId", user.getId())
-                    .put("role", user.getRole())
-                    .put("token", TOKEN_PREFIX + jwt);
+                        // Prepare response
+                        JSONObject responseBody = new JSONObject()
+                                        .put("userId", user.getId())
+                                        .put("role", user.getRole())
+                                        .put("token", TOKEN_PREFIX + jwt);
 
-            // Set CORS headers
-            response.addHeader("Access-Control-Expose-Headers", HEADER_STRING);
-            response.addHeader("Access-Control-Allow-Headers",
-                    HEADER_STRING + ", X-PINGOTHER, Origin, Content-Type, Accept, X-Requested-With, X-Custom-header");
-            response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
+                        // Set CORS headers
+                        response.addHeader("Access-Control-Expose-Headers", HEADER_STRING);
+                        response.addHeader("Access-Control-Allow-Headers",
+                                        HEADER_STRING + ", X-PINGOTHER, Origin, Content-Type, Accept, X-Requested-With, X-Custom-header");
+                        response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
 
-            log.info("Successfully authenticated user: {}", authenticationRequest.getUsername());
-            return ResponseEntity.ok(responseBody.toString());
+                        logService.info(SOURCE,
+                                        "Successfully authenticated user: " + authenticationRequest.getUsername(),
+                                        ORIGINATOR, "createAuthenticationToken");
+                        return ResponseEntity.ok(responseBody.toString());
 
-        } catch (BadCredentialsException e) {
-            log.warn("Authentication failed for user {}: Invalid credentials",
-                    authenticationRequest.getUsername());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid username or password");
-        } catch (Exception e) {
-            log.error("Authentication error for user {}: {}",
-                    authenticationRequest.getUsername(), e.getMessage(), e);
-            return ResponseEntity.internalServerError()
-                    .body("An unexpected error occurred during authentication");
+                } catch (BadCredentialsException e) {
+                        logService.warn(SOURCE, "Authentication failed for user " + authenticationRequest.getUsername()
+                                        + ": Invalid credentials", ORIGINATOR, "createAuthenticationToken");
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                        .body("Invalid username or password");
+                } catch (Exception e) {
+                        logService.error(SOURCE, "Authentication error for user " + authenticationRequest.getUsername()
+                                        + ": " + e.getMessage(), ORIGINATOR, "createAuthenticationToken");
+                        return ResponseEntity.internalServerError()
+                                        .body("An unexpected error occurred during authentication");
+                }
         }
-    }
 }
