@@ -1,5 +1,7 @@
 package com.westminster.ticketing_system.controllers;
 
+import java.util.stream.Collectors;
+
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,6 +10,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import com.westminster.ticketing_system.dtos.*;
@@ -17,7 +20,7 @@ import com.westminster.ticketing_system.util.JwtUtil;
 import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 
 import jakarta.servlet.http.HttpServletResponse;
-
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -57,10 +60,20 @@ public class AuthenticationController {
          * @return ResponseEntity containing the created user details or error message
          */
         @PostMapping("/signup")
-        public ResponseEntity<?> signupCustomer(@RequestBody SignupDTO signupDTO) {
+        public ResponseEntity<?> signupCustomer(@Valid @RequestBody SignupDTO signupDTO, BindingResult bindingResult) {
                 logService.info(SOURCE, "Processing customer signup request for email: " + signupDTO.getEmail(),
                                 ORIGINATOR, "signupCustomer");
                 try {
+                        // Check for validation errors
+                        if (bindingResult.hasErrors()) {
+                                String errors = bindingResult.getFieldErrors().stream()
+                                                .map(error -> error.getDefaultMessage())
+                                                .collect(Collectors.joining(", "));
+                                logService.warn(SOURCE, "Signup validation failed: " + errors, ORIGINATOR,
+                                                "signupCustomer");
+                                return ResponseEntity.badRequest().body(errors);
+                        }
+
                         if (authService.existsByEmail(signupDTO.getEmail())) {
                                 logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
                                                 ORIGINATOR, "signupCustomer");
@@ -93,10 +106,20 @@ public class AuthenticationController {
          * @return ResponseEntity containing the created user details or error message
          */
         @PostMapping("/vendor/signup")
-        public ResponseEntity<?> signupVendor(@RequestBody SignupDTO signupDTO) {
+        public ResponseEntity<?> signupVendor(@Valid @RequestBody SignupDTO signupDTO, BindingResult bindingResult) {
                 logService.info(SOURCE, "Processing vendor signup request for email: " + signupDTO.getEmail(),
                                 ORIGINATOR, "signupVendor");
                 try {
+                        // Check for validation errors
+                        if (bindingResult.hasErrors()) {
+                                String errors = bindingResult.getFieldErrors().stream()
+                                                .map(error -> error.getDefaultMessage())
+                                                .collect(Collectors.joining(", "));
+                                logService.warn(SOURCE, "Signup validation failed: " + errors, ORIGINATOR,
+                                                "signupVendor");
+                                return ResponseEntity.badRequest().body(errors);
+                        }
+
                         if (authService.existsByEmail(signupDTO.getEmail())) {
                                 logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
                                                 ORIGINATOR, "signupVendor");
@@ -138,17 +161,6 @@ public class AuthenticationController {
                                 ORIGINATOR, "createAuthenticationToken");
 
                 try {
-                        // Check if user is deleted
-                        UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
-                        if (user.getIsDeleted()) {
-                                logService.warn(SOURCE,
-                                                "Authentication failed for user " + authenticationRequest.getUsername()
-                                                                + ": Account deactivated",
-                                                ORIGINATOR, "createAuthenticationToken");
-                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                                .body("Account has been deactivated. Please contact support.");
-                        }
-
                         // Authenticate user
                         authenticationManager.authenticate(
                                         new UsernamePasswordAuthenticationToken(
@@ -159,6 +171,17 @@ public class AuthenticationController {
                         final UserDetails userDetails = userDetailServiceImplementation
                                         .loadUserByUsername(authenticationRequest.getUsername());
                         final String jwt = jwtUtil.generateToken(userDetails.getUsername());
+
+                        // Check if user is deleted
+                        UserDTO user = authService.getUserByEmail(authenticationRequest.getUsername());
+                        if (user.getIsDeleted()) {
+                                logService.warn(SOURCE,
+                                                "Authentication failed for user " + authenticationRequest.getUsername()
+                                                                + ": Account deactivated",
+                                                ORIGINATOR, "createAuthenticationToken");
+                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                                .body("Account has been deactivated. Please contact support.");
+                        }
 
                         // Prepare response
                         JSONObject responseBody = new JSONObject()
