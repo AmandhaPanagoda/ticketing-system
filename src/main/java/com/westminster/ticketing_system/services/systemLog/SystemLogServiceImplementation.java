@@ -4,6 +4,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.westminster.ticketing_system.dtos.SystemLogDTO;
+import com.westminster.ticketing_system.entity.SystemLog;
+import com.westminster.ticketing_system.repository.SystemLogRepository;
 
 import java.time.LocalDateTime;
 
@@ -17,21 +19,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SystemLogServiceImplementation implements SystemLogService {
     private final SimpMessagingTemplate messagingTemplate;
+    private final SystemLogRepository systemLogRepository;
 
     /**
      * Constructor for SystemLogServiceImplementation
      * 
-     * @param messagingTemplate WebSocket messaging template for broadcasting logs
+     * @param messagingTemplate   WebSocket messaging template for broadcasting logs
+     * @param systemLogRepository Repository for system logs
      */
-    public SystemLogServiceImplementation(SimpMessagingTemplate messagingTemplate) {
+    public SystemLogServiceImplementation(
+            SimpMessagingTemplate messagingTemplate,
+            SystemLogRepository systemLogRepository) {
         this.messagingTemplate = messagingTemplate;
+        this.systemLogRepository = systemLogRepository;
     }
 
     @Override
     public void info(String source, String message, String userId, String action) {
         try {
             log.info("{} - {} - {}", source, action, message);
-            broadcastLog("INFO", source, message, userId, action);
+            saveAndBroadcastLog("INFO", source, message, userId, action);
         } catch (Exception e) {
             log.error("Failed to log INFO message: {}", e.getMessage());
         }
@@ -41,7 +48,7 @@ public class SystemLogServiceImplementation implements SystemLogService {
     public void error(String source, String message, String userId, String action) {
         try {
             log.error("{} - {} - {}", source, action, message);
-            broadcastLog("ERROR", source, message, userId, action);
+            saveAndBroadcastLog("ERROR", source, message, userId, action);
         } catch (Exception e) {
             log.error("Failed to log ERROR message: {}", e.getMessage());
         }
@@ -51,7 +58,7 @@ public class SystemLogServiceImplementation implements SystemLogService {
     public void warn(String source, String message, String userId, String action) {
         try {
             log.warn("{} - {} - {}", source, action, message);
-            broadcastLog("WARN", source, message, userId, action);
+            saveAndBroadcastLog("WARN", source, message, userId, action);
         } catch (Exception e) {
             log.error("Failed to log WARN message: {}", e.getMessage());
         }
@@ -61,7 +68,7 @@ public class SystemLogServiceImplementation implements SystemLogService {
     public void debug(String source, String message, String userId, String action) {
         try {
             log.debug("{} - {} - {}", source, action, message);
-            broadcastLog("DEBUG", source, message, userId, action);
+            saveAndBroadcastLog("DEBUG", source, message, userId, action);
         } catch (Exception e) {
             log.error("Failed to log DEBUG message: {}", e.getMessage());
         }
@@ -76,21 +83,25 @@ public class SystemLogServiceImplementation implements SystemLogService {
      * @param userId  User ID associated with the log
      * @param action  Action being performed
      */
-    private void broadcastLog(String level, String source, String message,
+    private void saveAndBroadcastLog(String level, String source, String message,
             String userId, String action) {
         try {
-            SystemLogDTO logEntry = SystemLogDTO.builder()
-                    .level(level)
-                    .source(source)
-                    .message(message)
-                    .userId(userId)
-                    .action(action)
-                    .timestamp(LocalDateTime.now())
-                    .build();
+            // Create and save entity
+            SystemLog systemLog = new SystemLog(level, source, message, userId, action);
+            systemLogRepository.save(systemLog);
 
-            messagingTemplate.convertAndSend("/topic/logs", logEntry);
+            // Broadcast via WebSocket
+            SystemLogDTO logDTO = SystemLogDTO.createSystemLog(
+                    level,
+                    source,
+                    message,
+                    userId,
+                    action,
+                    systemLog.getTimestamp());
+
+            messagingTemplate.convertAndSend("/topic/logs", logDTO);
         } catch (Exception e) {
-            log.error("Failed to broadcast log message: {}", e.getMessage());
+            log.error("Failed to save/broadcast log message: {}", e.getMessage());
         }
     }
 }

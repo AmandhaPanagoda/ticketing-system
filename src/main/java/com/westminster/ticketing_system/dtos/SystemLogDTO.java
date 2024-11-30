@@ -17,4 +17,16 @@ public class SystemLogDTO {
     private String userId;
     private String action;
     private LocalDateTime timestamp;
+
+    public static SystemLogDTO createSystemLog(String level, String source, String message, String userId,
+            String action, LocalDateTime timestamp) {
+        return SystemLogDTO.builder()
+                .level(level)
+                .source(source)
+                .message(message)
+                .userId(userId)
+                .action(action)
+                .timestamp(timestamp)
+                .build();
+    }
 }
