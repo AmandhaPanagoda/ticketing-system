@@ -16,6 +16,7 @@ import com.westminster.ticketing_system.entity.Ticket;
 import com.westminster.ticketing_system.entity.User;
 import com.westminster.ticketing_system.repository.TicketRepository;
 import com.westminster.ticketing_system.repository.UserRepository;
+import com.westminster.ticketing_system.services.systemLog.SystemLogService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +33,12 @@ public class VendorServiceImplementation implements VendorService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private SystemLogService logService;
+
+    private final String source = "VendorService";
+    private final String originator = "SYSTEM";
+
     /**
      * {@inheritDoc}
      * Creates a new ticket with the provided details and associates it with the
@@ -40,8 +47,9 @@ public class VendorServiceImplementation implements VendorService {
      */
     @Override
     public boolean addTicket(int userId, TicketDTO ticketDTO) throws IOException {
-        log.info("Adding new ticket for user ID: {}", userId);
+        logService.info(source, "Adding new ticket for user ID: " + userId, String.valueOf(userId), "addTicket");
         Optional<User> optionalUser = userRepository.findById(userId);
+
         if (optionalUser.isPresent()) {
             try {
                 Ticket ticket = new Ticket();
@@ -56,14 +64,18 @@ public class VendorServiceImplementation implements VendorService {
                 ticket.setUser(optionalUser.get());
 
                 ticketRepository.save(ticket);
-                log.info("Successfully added ticket for user ID: {}", userId);
+                logService.info(source, "Successfully added ticket for user ID: " + userId, String.valueOf(userId),
+                        "addTicket");
                 return true;
             } catch (Exception e) {
-                log.error("Error while adding ticket for user ID: {}", userId, e);
+                logService.error(source, "Error while adding ticket for user ID: " + userId, String.valueOf(userId),
+                        "addTicket");
                 return false;
             }
         }
-        log.warn("User not found with ID: {}", userId);
+
+        logService.warn(source, "User not found with ID: " + userId, String.valueOf(userId), "addTicket");
+
         return false;
     }
 
@@ -74,8 +86,10 @@ public class VendorServiceImplementation implements VendorService {
      */
     @Override
     public List<TicketDTO> getVendorTickets(int userId) {
-        log.info("Fetching tickets for vendor ID: {}", userId);
+        logService.info(source, "Fetching tickets for vendor ID: " + userId, String.valueOf(userId),
+                "getVendorTickets");
         Optional<User> optionalUser = userRepository.findById(userId);
+
         if (optionalUser.isPresent()) {
             try {
                 List<Ticket> tickets = ticketRepository.findByUserId(userId);
@@ -83,14 +97,18 @@ public class VendorServiceImplementation implements VendorService {
                         .filter(ticket -> !ticket.isDeletedInd())
                         .map(Ticket::getDto)
                         .collect(Collectors.toList());
-                log.info("Retrieved {} tickets for vendor ID: {}", ticketDTOs.size(), userId);
+                logService.info(source, "Retrieved " + ticketDTOs.size() + " tickets for vendor ID: " + userId,
+                        String.valueOf(userId), "getVendorTickets");
                 return ticketDTOs;
             } catch (Exception e) {
-                log.error("Error while fetching tickets for vendor ID: {}", userId, e);
+                logService.error(source, "Error while fetching tickets for vendor ID: " + userId,
+                        String.valueOf(userId), "getVendorTickets");
                 return new ArrayList<>();
             }
         }
-        log.warn("User not found with ID: {}", userId);
+
+        logService.warn(source, "User not found with ID: " + userId, String.valueOf(userId), "getVendorTickets");
+
         return new ArrayList<>();
     }
 
@@ -102,8 +120,9 @@ public class VendorServiceImplementation implements VendorService {
      */
     @Override
     public boolean updateTicket(int ticketId, TicketDTO ticketDTO) throws IOException {
-        log.info("Updating ticket ID: {}", ticketId);
+        logService.info(source, "Updating ticket ID: " + ticketId, originator, "updateTicket");
         Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
+
         if (optionalTicket.isPresent() && !optionalTicket.get().isDeletedInd()) {
             try {
                 Ticket ticket = optionalTicket.get();
@@ -115,14 +134,18 @@ public class VendorServiceImplementation implements VendorService {
                 }
                 ticket.setUpdatedDateTime(LocalDateTime.now());
                 ticketRepository.save(ticket);
-                log.info("Successfully updated ticket ID: {}", ticketId);
+                logService.info(source, "Successfully updated ticket ID: " + ticketId, originator,
+                        "updateTicket");
                 return true;
             } catch (Exception e) {
-                log.error("Error while updating ticket ID: {}", ticketId, e);
+                logService.error(source, "Error while updating ticket ID: " + ticketId, originator,
+                        "updateTicket");
                 return false;
             }
         }
-        log.warn("Ticket not found or already deleted with ID: {}", ticketId);
+
+        logService.warn(source, "Ticket not found or already deleted with ID: " + ticketId, originator, "updateTicket");
+
         return false;
     }
 
@@ -134,8 +157,10 @@ public class VendorServiceImplementation implements VendorService {
      */
     @Override
     public boolean deleteTicket(int ticketId, int userId) {
-        log.info("Deleting ticket ID: {} for user ID: {}", ticketId, userId);
+        logService.info(source, "Deleting ticket ID: " + ticketId + " for user ID: " + userId, originator,
+                "deleteTicket");
         Optional<Ticket> optionalTicket = ticketRepository.findById(ticketId);
+
         if (optionalTicket.isPresent() &&
                 optionalTicket.get().getUser().getId() == userId &&
                 !optionalTicket.get().isDeletedInd()) {
@@ -144,14 +169,17 @@ public class VendorServiceImplementation implements VendorService {
                 ticket.setDeletedInd(true);
                 ticket.setUpdatedDateTime(LocalDateTime.now());
                 ticketRepository.save(ticket);
-                log.info("Successfully deleted ticket ID: {}", ticketId);
+                logService.info(source, "Successfully deleted ticket ID: " + ticketId, originator, "deleteTicket");
                 return true;
             } catch (Exception e) {
-                log.error("Error while deleting ticket ID: {}", ticketId, e);
+                logService.error(source, "Error while deleting ticket ID: " + ticketId, originator, "deleteTicket");
                 return false;
             }
         }
-        log.warn("Ticket not found, already deleted, or unauthorized access for ticket ID: {}", ticketId);
+
+        logService.warn(source, "Ticket not found, already deleted, or unauthorized access for ticket ID: " + ticketId,
+                originator, "deleteTicket");
+
         return false;
     }
 
@@ -163,8 +191,10 @@ public class VendorServiceImplementation implements VendorService {
      */
     @Override
     public List<TicketSummaryDTO> getVendorTicketSummaries(int userId) {
-        log.info("Fetching ticket summaries for vendor ID: {}", userId);
+        logService.info(source, "Fetching ticket summaries for vendor ID: " + userId, originator,
+                "getVendorTicketSummaries");
         Optional<User> optionalUser = userRepository.findById(userId);
+
         if (optionalUser.isPresent()) {
             try {
                 List<Ticket> tickets = ticketRepository.findByUserId(userId);
@@ -182,11 +212,14 @@ public class VendorServiceImplementation implements VendorService {
                         })
                         .collect(Collectors.toList());
             } catch (Exception e) {
-                log.error("Error while fetching ticket summaries for vendor ID: {}", userId, e);
+                logService.error(source, "Error while fetching ticket summaries for vendor ID: " + userId, originator,
+                        "getVendorTicketSummaries");
                 return new ArrayList<>();
             }
         }
-        log.warn("User not found with ID: {}", userId);
+
+        logService.warn(source, "User not found with ID: " + userId, originator, "getVendorTicketSummaries");
+
         return new ArrayList<>();
     }
 }
