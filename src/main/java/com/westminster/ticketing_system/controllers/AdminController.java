@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,8 @@ import com.westminster.ticketing_system.services.admin.AdminService;
 import com.westminster.ticketing_system.core.pool.TicketPool;
 import com.westminster.ticketing_system.core.threads.ThreadManager;
 import com.westminster.ticketing_system.services.systemLog.SystemLogService;
+import com.westminster.ticketing_system.services.authentication.AuthService;
+import com.westminster.ticketing_system.enums.UserRole;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +38,8 @@ public class AdminController {
     @Autowired
     private AdminService adminService;
 
+    @Autowired
+    private AuthService authService;
     @Autowired
     private ThreadManager threadManager;
 
@@ -81,6 +86,19 @@ public class AdminController {
     public ResponseEntity<?> deleteUser(@PathVariable int userId) {
         logService.info(SOURCE, "Attempting to delete user with ID: " + userId, ORIGINATOR, "deleteUser");
         try {
+            UserDTO user = authService.getUserById(userId);
+            if (user == null) {
+                logService.warn(SOURCE, "User with ID " + userId + " not found", ORIGINATOR, "deleteUser");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User does not exist");
+            }
+            if (user.getRole().equals(UserRole.ADMIN)) {
+                logService.warn(SOURCE, "Cannot delete admin user", ORIGINATOR, "deleteUser");
+                return ResponseEntity.badRequest().body("Cannot delete admin user");
+            }
+            if (user.getIsDeleted()) {
+                logService.warn(SOURCE, "User " + userId + " is already deleted", ORIGINATOR, "deleteUser");
+                return ResponseEntity.ok().body("User is already deleted");
+            }
             boolean isDeleted = adminService.deleteUser(userId);
             if (isDeleted) {
                 logService.info(SOURCE, "Successfully deleted user " + userId, ORIGINATOR, "deleteUser");
@@ -104,6 +122,15 @@ public class AdminController {
     public ResponseEntity<?> activateUser(@PathVariable int userId) {
         logService.info(SOURCE, "Attempting to activate user with ID: " + userId, ORIGINATOR, "activateUser");
         try {
+            UserDTO user = authService.getUserById(userId);
+            if (user == null) {
+                logService.warn(SOURCE, "User with ID " + userId + " not found", ORIGINATOR, "activateUser");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User does not exist");
+            }
+            if (!user.getIsDeleted()) {
+                logService.warn(SOURCE, "User " + userId + " is already activated", ORIGINATOR, "activateUser");
+                return ResponseEntity.ok().body("User is already activated");
+            }
             boolean isActivated = adminService.activateUser(userId);
             if (isActivated) {
                 logService.info(SOURCE, "Successfully activated user " + userId, ORIGINATOR, "activateUser");
