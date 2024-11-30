@@ -15,4 +15,6 @@ public interface AuthService {
     Boolean isDeleted(String email);
 
     UserDTO getUserByEmail(String email);
+
+    UserDTO getUserById(int userId);
 }
