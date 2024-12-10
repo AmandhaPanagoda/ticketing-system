@@ -64,6 +64,29 @@ public class AuthServiceImplementation implements AuthService {
     }
 
     @Override
+    public UserDTO signupAdmin(SignupDTO signupDTO) {
+        try {
+            log.info("Creating new admin account for username: {}", signupDTO.getUsername());
+            User user = new User();
+            user.setUsername(signupDTO.getUsername().toLowerCase());
+            user.setFirstName(signupDTO.getFirstName());
+            user.setLastName(signupDTO.getLastName());
+            user.setEmail(signupDTO.getEmail().toLowerCase());
+            user.setPhoneNumber(signupDTO.getPhoneNumber());
+            user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
+            user.setRole(UserRole.ADMIN);
+            user.setIsDeleted(false);
+
+            UserDTO savedUser = userRepository.save(user).getDto();
+            log.info("Successfully created admin account for: {}", signupDTO.getUsername());
+            return savedUser;
+        } catch (Exception e) {
+            log.error("Error creating admin account: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create admin account", e);
+        }
+    }
+
+    @Override
     public Boolean existsByEmail(String email) {
         try {
             log.debug("Checking if email exists: {}", email);
