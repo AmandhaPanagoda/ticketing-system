@@ -22,10 +22,10 @@ public class AuthServiceImplementation implements AuthService {
         try {
             log.info("Creating new customer account for username: {}", signupDTO.getUsername());
             User user = new User();
-            user.setUsername(signupDTO.getUsername());
+            user.setUsername(signupDTO.getUsername().toLowerCase());
             user.setFirstName(signupDTO.getFirstName());
             user.setLastName(signupDTO.getLastName());
-            user.setEmail(signupDTO.getEmail());
+            user.setEmail(signupDTO.getEmail().toLowerCase());
             user.setPhoneNumber(signupDTO.getPhoneNumber());
             user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
             user.setRole(UserRole.CUSTOMER);
@@ -45,10 +45,10 @@ public class AuthServiceImplementation implements AuthService {
         try {
             log.info("Creating new vendor account for username: {}", signupDTO.getUsername());
             User user = new User();
-            user.setUsername(signupDTO.getUsername());
+            user.setUsername(signupDTO.getUsername().toLowerCase());
             user.setFirstName(signupDTO.getFirstName());
             user.setLastName(signupDTO.getLastName());
-            user.setEmail(signupDTO.getEmail());
+            user.setEmail(signupDTO.getEmail().toLowerCase());
             user.setPhoneNumber(signupDTO.getPhoneNumber());
             user.setPassword(new BCryptPasswordEncoder().encode(signupDTO.getPassword()));
             user.setRole(UserRole.VENDOR);

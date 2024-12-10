@@ -74,13 +74,13 @@ public class AuthenticationController {
                                 return ResponseEntity.badRequest().body(errors);
                         }
 
-                        if (authService.existsByEmail(signupDTO.getEmail())) {
+                        if (authService.existsByEmail(signupDTO.getEmail().toLowerCase())) {
                                 logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
                                                 ORIGINATOR, "signupCustomer");
-                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("User is already registered");
                         }
 
-                        if (authService.existsByUsername(signupDTO.getUsername())) {
+                        if (authService.existsByUsername(signupDTO.getUsername().toLowerCase())) {
                                 logService.warn(SOURCE,
                                                 "Signup failed - Username already exists: " + signupDTO.getUsername(),
                                                 ORIGINATOR, "signupCustomer");
@@ -120,13 +120,13 @@ public class AuthenticationController {
                                 return ResponseEntity.badRequest().body(errors);
                         }
 
-                        if (authService.existsByEmail(signupDTO.getEmail())) {
+                        if (authService.existsByEmail(signupDTO.getEmail().toLowerCase())) {
                                 logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
                                                 ORIGINATOR, "signupVendor");
-                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("User is already registered");
                         }
 
-                        if (authService.existsByUsername(signupDTO.getUsername())) {
+                        if (authService.existsByUsername(signupDTO.getUsername().toLowerCase())) {
                                 logService.warn(SOURCE,
                                                 "Signup failed - Username already exists: " + signupDTO.getUsername(),
                                                 ORIGINATOR, "signupVendor");
