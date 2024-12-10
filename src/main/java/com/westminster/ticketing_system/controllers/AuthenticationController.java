@@ -146,6 +146,52 @@ public class AuthenticationController {
         }
 
         /**
+         * Handles admin registration (THIS IS FOR TEST PURPOSES ONLY)
+         * 
+         * @param signupDTO Registration details for the admin
+         * @return ResponseEntity containing the created user details or error message
+         */
+        @PostMapping("/create-admin")
+        public ResponseEntity<?> signupAdmin(@Valid @RequestBody SignupDTO signupDTO, BindingResult bindingResult) {
+                logService.info(SOURCE, "Processing admin signup request for email: " + signupDTO.getEmail(),
+                                ORIGINATOR, "signupAdmin");
+                try {
+                        // Check for validation errors
+                        if (bindingResult.hasErrors()) {
+                                String errors = bindingResult.getFieldErrors().stream()
+                                                .map(error -> error.getDefaultMessage())
+                                                .collect(Collectors.joining(", "));
+                                logService.warn(SOURCE, "Signup validation failed: " + errors, ORIGINATOR,
+                                                "signupAdmin");
+                                return ResponseEntity.badRequest().body(errors);
+                        }
+
+                        if (authService.existsByEmail(signupDTO.getEmail().toLowerCase())) {
+                                logService.warn(SOURCE, "Signup failed - Email already exists: " + signupDTO.getEmail(),
+                                                ORIGINATOR, "signupAdmin");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("User is already registered");
+                        }
+
+                        if (authService.existsByUsername(signupDTO.getUsername().toLowerCase())) {
+                                logService.warn(SOURCE,
+                                                "Signup failed - Username already exists: " + signupDTO.getUsername(),
+                                                ORIGINATOR, "signupAdmin");
+                                return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+                        }
+
+                        UserDTO createdUser = authService.signupVendor(signupDTO);
+                        logService.info(SOURCE, "Successfully created admin account for: " + signupDTO.getEmail(),
+                                        ORIGINATOR, "signupAdmin");
+                        return ResponseEntity.ok(createdUser);
+                } catch (Exception e) {
+                        logService.error(SOURCE, "Error during admin signup: " + e.getMessage(), ORIGINATOR,
+                                        "signupAdmin");
+                        return ResponseEntity.internalServerError()
+                                        .body("An unexpected error occurred during registration");
+                }
+        }
+
+        /**
          * Authenticates user and generates JWT token
          * 
          * @param authenticationRequest Contains login credentials
