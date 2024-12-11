@@ -62,6 +62,12 @@ public class VendorControllerV2 {
                 return ResponseEntity.badRequest().body("System is currently not running");
             }
 
+            if (ticketCount < 0) {
+                logService.warn(SOURCE, "Cannot add tickets less than 0. Request from " + userId,
+                        ORIGINATOR, "addTicketsV2");
+                return ResponseEntity.badRequest().body("Please enter a valid amount of tickets.");
+            }
+
             VendorThread vendorThread = new VendorThread(ticketPool, userId, ticketCount);
             threadManager.addVendorThread(vendorThread);
             vendorThread.start();

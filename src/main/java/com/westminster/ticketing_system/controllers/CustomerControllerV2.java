@@ -63,7 +63,7 @@ public class CustomerControllerV2 {
             }
 
             if (ticketCount < 0) {
-                logService.warn(SOURCE, "Cannot add tickets less than 0. Request from " + userId,
+                logService.warn(SOURCE, "Cannot buy tickets less than 0. Request from " + userId,
                         ORIGINATOR, "removeTicketsV2");
                 return ResponseEntity.badRequest().body("Please enter a valid amount of tickets.");
             }
