@@ -7,8 +7,6 @@ import com.westminster.ticketing_system.dtos.SystemLogDTO;
 import com.westminster.ticketing_system.entity.SystemLog;
 import com.westminster.ticketing_system.repository.SystemLogRepository;
 
-import java.time.LocalDateTime;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
