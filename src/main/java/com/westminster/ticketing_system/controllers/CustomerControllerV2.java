@@ -59,7 +59,13 @@ public class CustomerControllerV2 {
             if (!threadManager.isSystemRunning()) {
                 logService.warn(SOURCE, "System not running - rejected request from customer " + userId,
                         ORIGINATOR, "removeTicketsV2");
-                return ResponseEntity.badRequest().body("System is currently not running");
+                return ResponseEntity.badRequest().body("Ticket Pool is not open. Please wait!");
+            }
+
+            if (ticketCount < 0) {
+                logService.warn(SOURCE, "Cannot add tickets less than 0. Request from " + userId,
+                        ORIGINATOR, "removeTicketsV2");
+                return ResponseEntity.badRequest().body("Please enter a valid amount of tickets.");
             }
 
             CustomerThread customerThread = new CustomerThread(ticketPool, userId, ticketCount);
